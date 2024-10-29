@@ -26,6 +26,7 @@ Vue.component('a-planet', {
 	},
 	template: '' +
 		'<div class="a-planet" ' +
+			':id="planet.name + \'-container\'" ' +
 			':style="{ ' +
 				'transform: planetTransform, ' +
 				'height: (100 + 32 * planet.order) + \'px\', ' +
@@ -160,7 +161,6 @@ Vue.component('a-line', {
 	},
 	template: '' +
 		'<div class="a-line" ' +
-			'v-if="$root.showLines" ' +
 			':style="{ ' +
 				'transform: lineTransform, ' +
 				'height: ((5 * fromStar.dec) + easingAdjustment + 400) + \'px\', ' +
@@ -244,6 +244,20 @@ Vue.component('sky-viewer', {
 					':type="\'minor\'" ' +
 					'>' +
 				'</a-planet>' +*/
+				'<div v-for="(p1, p1name) in $root.aspects" :key="p1name" :id="p1name + \'-aspects\'">' +
+					'<div v-for="(p2, p2name) in p1" :key="p1name + \'-\' + p2name" :id="p1name + \'-\' + p2name + \'-aspect\'">' +
+						'<div ' +
+							'v-if="$root.showAspects" ' +
+							'class="planet-laser" ' +
+							':class="[ p2.aspect ]" ' +
+							':style="{ ' +
+								'transform: \'rotate(\' + (180 + $root.planetAngle(p1name)) + \'deg)\', ' +
+								'height: ((100 + 32 * $root.thePlanets.filter(function(planet) { return planet.name == p1name })[0].order) / 2) + \'px\', ' +
+							'}" ' +
+							'>' +
+						'</div>' +
+					'</div>' +
+				'</div>' +
 				/*'<a-line ' +
 					'v-for="line in $root.theLines" ' +
 					':line="line" ' +
@@ -524,7 +538,8 @@ Vue.component('sky-viewer', {
 				'<div class="control-button" :class="{ on: $root.visibleSkyUp, }" @click.stop="$root.visibleSkyUp = !$root.visibleSkyUp">Sky Up</div>' +
 				'<br>' +
 				'<div class="control-button" :class="{ on: $root.showLasers, }" @click.stop="$root.showLasers = !$root.showLasers">Lasers</div>' +
-				'<div class="control-button" :class="{ on: $root.showLines, }" @click.stop="$root.showLines = !$root.showLines">Lines</div>' +
+				//'<div class="control-button" :class="{ on: $root.showLines, }" @click.stop="$root.showLines = !$root.showLines">Lines</div>' +
+				'<div class="control-button" :class="{ on: $root.showAspects, }" @click.stop="$root.showAspects = !$root.showAspects">Aspects</div>' +
 				'<div class="control-button" :class="{ on: $root.showDivisions, }" @click.stop="$root.showDivisions = !$root.showDivisions">Divisions</div>' +
 				'<div class="control-button" :class="{ on: $root.showAngles, }" @click.stop="$root.showAngles = !$root.showAngles">Angles</div>' +
 			'</div>' +
@@ -567,7 +582,6 @@ Vue.component('sky-viewer', {
 var app = new Vue({
 	el: '#app',
     data: {
-	    appTitle: 'Chill Astrology',
 	    MILLIS_IN_YEAR: 31556952000,
     SECOND: 1000,
     MINUTE: 60 * 1000,
@@ -585,6 +599,7 @@ var app = new Vue({
 	    useSymbols: false,
 	    showLasers: false,
 	    showLines: false,
+	    showAspects: false,
 	    showDivisions: false,
 	    showAngles: false,
 	    theZodiac: [
@@ -5858,6 +5873,65 @@ var app = new Vue({
 	    theCenterEl: null,
     },
     computed: {
+	    aspects: function() {
+		    var t = this;
+		    if (!t.showAspects) { return; }
+		    t.dateTime;
+		    var aspects = {};
+		    if (!document.getElementById('Sun-container')) { return {}; }
+		    t.thePlanets.forEach(function(p1) {
+			    aspects[p1.name] = {};
+			    t.thePlanets.forEach(function(p2) {
+				    if (p1.name != p2.name) {
+					    aspects[p1.name][p2.name] = {};
+					    var p1angle = document.getElementById(p1.name + '-container').style.transform;
+					    var rotateIndex = p1angle.indexOf('rotate');
+					    var rotPlus7 = rotateIndex + 7
+					    var degIndex = p1angle.indexOf('deg');
+					    var degMinusRot = degIndex - rotPlus7;
+					    p1angle = parseFloat(p1angle.substr(rotPlus7, degMinusRot));
+					    p1angle = t.normalizeAngle(p1angle);
+
+					    var p2angle = document.getElementById(p2.name + '-container').style.transform;
+					    var rotateIndex = p2angle.indexOf('rotate');
+					    var rotPlus7 = rotateIndex + 7
+					    var degIndex = p2angle.indexOf('deg');
+					    var degMinusRot = degIndex - rotPlus7;
+					    p2angle = parseFloat(p2angle.substr(rotPlus7, degMinusRot));
+					    p2angle = t.normalizeAngle(p2angle);
+
+					    angleDiff = Math.abs(p1angle - p2angle);
+					    if (angleDiff > 180) { angleDiff = 360 - angleDiff; }
+
+					    aspects[p1.name][p2.name].angle = angleDiff;
+					    var maxOrb = 2;
+					    if (Math.abs(angleDiff - 0) < maxOrb) { 
+						    aspects[p1.name][p2.name].aspect = 'Conjunct';
+						    aspects[p1.name][p2.name].strength = Math.abs(angleDiff - 0) / maxOrb;
+					    } else if (Math.abs(angleDiff - 180) < maxOrb) { 
+						    aspects[p1.name][p2.name].aspect = 'Opposition';
+						    aspects[p1.name][p2.name].strength = Math.abs(angleDiff - 180) / maxOrb;
+					    } else if (Math.abs(angleDiff - 120) < maxOrb) { 
+						    aspects[p1.name][p2.name].aspect = 'Trine';
+						    aspects[p1.name][p2.name].strength = Math.abs(angleDiff - 120) / maxOrb;
+					    } else if (Math.abs(angleDiff - 90) < maxOrb) { 
+						    aspects[p1.name][p2.name].aspect = 'Square';
+						    aspects[p1.name][p2.name].strength = Math.abs(angleDiff - 90) / maxOrb;
+					    } else if (Math.abs(angleDiff - 60) < maxOrb / 2) { 
+						    aspects[p1.name][p2.name].aspect = 'Sextile';
+						    aspects[p1.name][p2.name].strength = Math.abs(angleDiff - 60) / maxOrb / 2;
+					    } else {
+						    delete aspects[p1.name][p2.name];
+					    }
+				    }
+			    });
+		    });
+		    for (var key in aspects) {
+			    var props = Object.getOwnPropertyNames(aspects[key]);
+			    if (props.length == 0) { delete aspects[key]; }
+		    }
+		    return aspects;
+	    },
 	    theCenterRotation: function() {
 		    return -(180 + this.$root.sunAngle - (360 * this.$root.dayPercent()));
 	    },
@@ -6249,6 +6323,7 @@ var app = new Vue({
 	    //this.runClock();
 	    setTimeout(function() { 
 		    $root.theCenterEl = document.getElementById('the-center').getBoundingClientRect();
+		    $root.dateTime++;
 		    //Vue.set($root, 'dateTime', $root.dateTime + 6.7*$root.MONTHISH);
 		    //Vue.set($root, 'showLines', true);
 	    }, 100);

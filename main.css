@@ -262,6 +262,27 @@ table td {
 	transform-origin: top left;
 }
 
+.planet-laser.Conjunct {
+	border-left: 1px solid red;
+}
+
+.planet-laser.Opposition {
+	border-left: 1px solid orange;
+}
+
+.planet-laser.Trine {
+	border-left: 1px solid yellow;
+}
+
+.planet-laser.Square {
+	border-left: 1px solid lightGreen;
+}
+
+.planet-laser.Sextile {
+	border-left: 1px solid magenta;
+	top: 1px;
+}
+
 .shader-caption {
 	position: absolute;
 	bottom: 0;
