@@ -1,6 +1,13 @@
 Vue.component('a-planet', {
 	props: ['planet'],
 	computed: {
+		planetAngle: function() {
+			return this.$root.planetAngle(this.planet.name);
+		},
+		planetSign: function() {
+			if (['NN', 'SN'].indexOf(this.planet.name) > -1) { return {}; }
+			return this.$root.angleSign(this.planetAngle);
+		},
 		planetTransform: function() {
 			var planetName = this.planet.name;
 			if (planetName == 'NN') {
@@ -8,7 +15,7 @@ Vue.component('a-planet', {
 			} else if (planetName == 'SN') {
 				return 'translate(-50%, -50%) rotate(' + (180 + this.$root.northSouthNodeRotation) + 'deg)';
 			} else {
-				return 'translate(-50%, -50%) rotate(' + this.$root.planetAngle(planetName) + 'deg)';
+				return 'translate(-50%, -50%) rotate(' + this.planetAngle + 'deg)';
 			}
 		},
 		planetZ: function() {
@@ -35,6 +42,17 @@ Vue.component('a-planet', {
 				'<div class="planet-name" v-if="!$root.useSymbols" :class="{ node: planet.name == \'NN\' || planet.name == \'SN\', }">{{ planet.name }}</div>' +
 				'<div class="planet-symbol" v-if="$root.useSymbols" :class="{ node: planet.name == \'NN\' || planet.name == \'SN\', }">{{ planet.symbol }}</div>' +
 				'<div class="planet-disc" ' +
+					':id="planet.name + \'-domal-dignity\'" ' +
+					'v-if="planet.name == planetSign.planet || planet.name == planetSign.secondaryPlanet" ' +
+					':style="{ ' +
+						'backgroundColor: \'yellow\', ' +
+						'width: planet.size * 1.5 + \'px\', ' +
+						'height: planet.size * 1.5 + \'px\', ' +
+						'filter: \'blur(2px) saturate(5)\', ' +
+					'}" ' +
+				'>' +
+				'</div>' +
+				'<div class="planet-disc" ' +
 					':id="planet.name + \'-disc\'" ' +
 					':style="{ ' +
 						'backgroundColor: planet.color, ' +
@@ -42,7 +60,6 @@ Vue.component('a-planet', {
 						'width: planet.size + \'px\', ' +
 						'height: planet.size + \'px\', ' +
 					'}" ' +
-				//'><div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);">{{ planetZ }}</div>' +
 				'>' +
 					//'<div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>' +
 					'<div v-if="planet.name == \'Moon\'" class="moon-shader" ' +
@@ -255,6 +272,41 @@ Vue.component('sky-viewer', {
 								'height: ((100 + 32 * $root.thePlanets.filter(function(planet) { return planet.name == p1name })[0].order) / 2) + \'px\', ' +
 							'}" ' +
 							'>' +
+						'</div>' +
+						'<div ' +
+							'v-if="$root.showAspects && p2.aspect != \'Conjunct\' && p2.aspect != \'Opposition\'" ' +
+							'class="planet-laser" ' +
+							':style="{ ' +
+								'transform: \'rotate(\' + (180 + $root.planetAngle(p1name)) + \'deg)\', ' +
+								'height: (20) + \'px\', ' +
+								'borderLeft: \'unset\', ' +
+							'}" ' +
+							'>' +
+							'<div ' +
+								'v-if="(p2.p1angle - p2.p2angle < 180 && p2.p1angle - p2.p2angle) > 0 || p2.p1angle - p2.p2angle < -180" ' +
+								'class="planet-laser" ' +
+								':class="[ p2.aspect ]" ' +
+								':style="{ ' +
+									'transform: ' +
+										'\'rotate(\' + (p2.aspect == \'Square\' ? 90 : ( p2.aspect == \'Trine\' ? (30) : 60)) + \'deg)\' ' +
+										//' + \'scaleY(\' + (p2.p1angle - p2.p2angle > 180 ? -1 : 1) + \')\'' +
+										', ' +
+									'transformOrigin: \'bottom left\', ' +
+									'height: 20 + \'px\', ' +
+								'}" ' +
+								'>' +
+								'<div ' +
+									'v-if="p2.aspect == \'Square\' || p2.aspect == \'Trine\'" ' +
+									'class="planet-laser" ' +
+									':class="[ p2.aspect ]" ' +
+									':style="{ ' +
+										'transform: \'rotate(\' + (p2.aspect == \'Square\' ? 90 : 180) + \'deg)\', ' +
+										'transformOrigin: \'top left\', ' +
+										'height: (p2.aspect == \'Square\' ? 20 : 15) + \'px\', ' +
+									'}" ' +
+									'>' +
+								'</div>' +
+							'</div>' +
 						'</div>' +
 					'</div>' +
 				'</div>' +
@@ -485,63 +537,63 @@ Vue.component('sky-viewer', {
 					'</div>' +
 				'</div>' +
 			'</div>' +
-			'<div>' +
-				'<table class="date-shown">' +
-					'<tr style="font-size: 10px;">' +
-						'<td class="control-cell" @click.stop="$root.dateTime += (60 * 60 * 1000)">&#9650;</td>' +
-						'<td class="control-cell" @click.stop="$root.dateTime += (60 * 1000)">&#9650;</td>' +
-						'<td></td>' +
-						'<td class="control-cell" @click.stop="incrementMonth">&#9650;</td>' +
-						'<td class="control-cell" @click.stop="$root.dateTime += (24 * 60 * 60 * 1000)">&#9650;</td>' +
-						'<td class="control-cell" @click.stop="incrementYear">&#9650;</td>' +
-					'</tr>' +
-					'<tr style="font-size: 16px;">' +
-						'<td><span v-show="$root.dateShown.getHours() < 10">0</span>{{ $root.dateShown.getHours() }}:</td>' +
-						'<td><span v-show="$root.dateShown.getMinutes() < 10">0</span>{{ $root.dateShown.getMinutes() }}</td>' +
-						'<td>{{ $root.dateShown.getHours() >= 12 ? \'PM\' : \'AM\' }}&nbsp;</td>' +
-						'<td><span v-show="$root.dateShown.getMonth() < 9">0</span>{{ $root.dateShown.getMonth() + 1 }}/</td>' +
-						'<td><span v-show="$root.dateShown.getDate() < 10">0</span>{{ $root.dateShown.getDate() }}/</td>' +
-						'<td>{{ $root.dateShown.getFullYear() }}&nbsp;</td>' +
-						'<td style="font-size: 10px;">{{ $root.isDST ? \'(DST)\' : \'\' }} </td>' +
-						'<td><div class="control-button" @click.stop="$root.dateTime = new Date().getTime()">Now</div></td>' +
-						'<td><div class="control-button" @click.stop="$root.dateTime = 304017323563">BD</div></td>' +
-					'</tr>' +
-					'<tr class="control-row" style="font-size: 10px;">' +
-						'<td class="control-cell" @click.stop="$root.dateTime -= (60 * 60 * 1000)">&#9660;</td>' +
-						'<td class="control-cell" @click.stop="$root.dateTime -= (60 * 1000)">&#9660;</td>' +
-						'<td></td>' +
-						'<td class="control-cell" @click.stop="decrementMonth">&#9660;</td>' +
-						'<td class="control-cell" @click.stop="$root.dateTime -= (24 * 60 * 60 * 1000)">&#9660;</td>' +
-						'<td class="control-cell" @click.stop="decrementYear">&#9660;</td>' +
-					'</tr>' +
-				'</table>' +
-			'</div>' +
-			'<div class="date-controls">' +
-				'<div class="control-button" @click.stop="$root.runClock" v-if="$root.clockID == -1">GO</div>' +
-				'<div class="control-button on" @click.stop="$root.stopClock" v-if="$root.clockID != -1">GO</div>' +
-				'<div class="control-button" @click.stop="$root.stepIncrement /= 10">-</div>' +
-				'<div class="control-button" @click.stop="$root.stepIncrement *= 10">+</div>' +
-				'<div class="control-text">Speed: {{ $root.stepIncrement / 100000 }}</div>' +
-				'<br>' +
-				'<br>' +
-				/*'<div class="control-button" @click.stop="$root.dateTime = 1718973664715">Longest SR</div>' +
-				'<div class="control-button" @click.stop="$root.dateTime = 1718996414715">Longest Noon</div>' +
-				'<div class="control-button" @click.stop="$root.dateTime = 1719000014715">Longest 1:00</div>' +
-				'<div class="control-button" @click.stop="$root.dateTime = 1719027564715">Longest SS</div>' +
-				'<br>' +
-				'<div class="control-button" @click.stop="$root.dateTime = 1734794724715">Shortest SR</div>' +
-				'<div class="control-button" @click.stop="$root.dateTime = 1734811224715">Shortest Noon</div>' +
-				'<div class="control-button" @click.stop="$root.dateTime = 1734828424715">Shortest SS</div>' +
-				'<br>' +*/
-				'<div class="control-button" :class="{ on: $root.useSymbols, }" @click.stop="$root.useSymbols = !$root.useSymbols">Symbols</div>' +
-				'<div class="control-button" :class="{ on: $root.showShader, }" @click.stop="$root.showShader = !$root.showShader">Shader</div>' +
-				'<div class="control-button" :class="{ on: $root.visibleSkyUp, }" @click.stop="$root.visibleSkyUp = !$root.visibleSkyUp">Sky Up</div>' +
-				'<br>' +
-				'<div class="control-button" :class="{ on: $root.showLasers, }" @click.stop="$root.showLasers = !$root.showLasers">Lasers</div>' +
-				//'<div class="control-button" :class="{ on: $root.showLines, }" @click.stop="$root.showLines = !$root.showLines">Lines</div>' +
-				'<div class="control-button" :class="{ on: $root.showAspects, }" @click.stop="$root.showAspects = !$root.showAspects">Aspects</div>' +
-				'<div class="control-button" :class="{ on: $root.showDivisions, }" @click.stop="$root.showDivisions = !$root.showDivisions">Divisions</div>' +
-				'<div class="control-button" :class="{ on: $root.showAngles, }" @click.stop="$root.showAngles = !$root.showAngles">Angles</div>' +
+			'<div class="control-box">' +
+				'<div>' +
+					'<table class="date-shown">' +
+						'<tr style="font-size: 10px;">' +
+							'<td class="control-cell" @click.stop="$root.dateTime += (60 * 60 * 1000)">&#9650;</td>' +
+							'<td class="control-cell" @click.stop="$root.dateTime += (60 * 1000)">&#9650;</td>' +
+							'<td></td>' +
+							'<td class="control-cell" @click.stop="incrementMonth">&#9650;</td>' +
+							'<td class="control-cell" @click.stop="$root.dateTime += (24 * 60 * 60 * 1000)">&#9650;</td>' +
+							'<td class="control-cell" @click.stop="incrementYear">&#9650;</td>' +
+						'</tr>' +
+						'<tr style="font-size: 16px;">' +
+							'<td><span v-show="$root.dateShown.getHours() < 10">0</span>{{ $root.dateShown.getHours() }}:</td>' +
+							'<td><span v-show="$root.dateShown.getMinutes() < 10">0</span>{{ $root.dateShown.getMinutes() }}</td>' +
+							'<td>{{ $root.dateShown.getHours() >= 12 ? \'PM\' : \'AM\' }}&nbsp;</td>' +
+							'<td><span v-show="$root.dateShown.getMonth() < 9">0</span>{{ $root.dateShown.getMonth() + 1 }}/</td>' +
+							'<td><span v-show="$root.dateShown.getDate() < 10">0</span>{{ $root.dateShown.getDate() }}/</td>' +
+							'<td>{{ $root.dateShown.getFullYear() }}&nbsp;</td>' +
+							'<td class="dst-indicator">{{ $root.isDST ? \'(DST)\' : \'\' }} </td>' +
+						'</tr>' +
+						'<tr class="control-row" style="font-size: 10px;">' +
+							'<td class="control-cell" @click.stop="$root.dateTime -= (60 * 60 * 1000)">&#9660;</td>' +
+							'<td class="control-cell" @click.stop="$root.dateTime -= (60 * 1000)">&#9660;</td>' +
+							'<td></td>' +
+							'<td class="control-cell" @click.stop="decrementMonth">&#9660;</td>' +
+							'<td class="control-cell" @click.stop="$root.dateTime -= (24 * 60 * 60 * 1000)">&#9660;</td>' +
+							'<td class="control-cell" @click.stop="decrementYear">&#9660;</td>' +
+						'</tr>' +
+					'</table>' +
+				'</div>' +
+				'<div class="date-controls">' +
+					'<div class="control-button" @click.stop="$root.dateTime = new Date().getTime()">Now</div>' +
+					'<div class="control-button" @click.stop="$root.dateTime = 304017323563">BD</div>' +
+					'<div class="control-button" @click.stop="$root.sessionStorage.setItem(\'savedTime\', $root.dateTime); $root.savedDateTime = $root.dateTime;">Save</div>' +
+					'<div class="control-button" @click.stop="$root.dateTime = $root.sessionStorage.getItem(\'savedTime\') ? parseInt($root.sessionStorage.getItem(\'savedTime\')) : 0;">Load</div>' +
+					'<div class="control-button" @click.stop="$root.runClock" v-if="$root.clockID == -1">GO</div>' +
+					'<div class="control-button on" @click.stop="$root.stopClock" v-if="$root.clockID != -1">GO</div>' +
+					'<div class="control-button" @click.stop="$root.stepIncrement /= 10">-</div>' +
+					'<div class="control-button" @click.stop="$root.stepIncrement *= 10">+</div>' +
+					/*'<div class="control-button" @click.stop="$root.dateTime = 1718973664715">Longest SR</div>' +
+					'<div class="control-button" @click.stop="$root.dateTime = 1718996414715">Longest Noon</div>' +
+					'<div class="control-button" @click.stop="$root.dateTime = 1719000014715">Longest 1:00</div>' +
+					'<div class="control-button" @click.stop="$root.dateTime = 1719027564715">Longest SS</div>' +
+					'<br>' +
+					'<div class="control-button" @click.stop="$root.dateTime = 1734794724715">Shortest SR</div>' +
+					'<div class="control-button" @click.stop="$root.dateTime = 1734811224715">Shortest Noon</div>' +
+					'<div class="control-button" @click.stop="$root.dateTime = 1734828424715">Shortest SS</div>' +
+					'<br>' +*/
+					'<div class="control-button" :class="{ on: $root.useSymbols, }" @click.stop="$root.useSymbols = !$root.useSymbols">Symbols</div>' +
+					'<div class="control-button" :class="{ on: $root.showShader, }" @click.stop="$root.showShader = !$root.showShader">Shader</div>' +
+					'<div class="control-button" :class="{ on: $root.visibleSkyUp, }" @click.stop="$root.visibleSkyUp = !$root.visibleSkyUp">Sky Up</div>' +
+					'<div class="control-button" :class="{ on: $root.showLasers, }" @click.stop="$root.showLasers = !$root.showLasers">Lasers</div>' +
+					'<div class="control-button" :class="{ on: $root.showLines, }" @click.stop="$root.showLines = !$root.showLines">Lines</div>' +
+					'<div class="control-button" :class="{ on: $root.showAspects, }" @click.stop="$root.showAspects = !$root.showAspects">Aspects</div>' +
+					'<div class="control-button" :class="{ on: $root.showDivisions, }" @click.stop="$root.showDivisions = !$root.showDivisions">Divisions</div>' +
+					'<div class="control-button" :class="{ on: $root.showAngles, }" @click.stop="$root.showAngles = !$root.showAngles">Angles</div>' +
+				'</div>' +
 			'</div>' +
 		'</div>' +
 		'',
@@ -582,6 +634,7 @@ Vue.component('sky-viewer', {
 var app = new Vue({
 	el: '#app',
     data: {
+	    sessionStorage: sessionStorage,
 	    MILLIS_IN_YEAR: 31556952000,
     SECOND: 1000,
     MINUTE: 60 * 1000,
@@ -591,11 +644,12 @@ var app = new Vue({
     YEARISH: 365 * 24 * 60 * 60 * 1000,
 	    window: window,
 	    dateTime: new Date().getTime(),
+	    savedDateTime: null,
     	sunZs: [],
 	    stepIncrement: 100000,
 	    clockID: -1,
-	    showShader: true,
-	    visibleSkyUp: true,
+	    showShader: false,
+	    visibleSkyUp: false,
 	    useSymbols: false,
 	    showLasers: false,
 	    showLines: false,
@@ -603,18 +657,18 @@ var app = new Vue({
 	    showDivisions: false,
 	    showAngles: false,
 	    theZodiac: [
-		{ name: 'Aries', symbol: String.fromCodePoint(0x2648)}, 
-		{ name: 'Taurus', symbol: String.fromCodePoint(0x2649)}, 
-		{ name: 'Gemini', symbol: String.fromCodePoint(0x264A)}, // UTF-16 Hex (C Syntax)
-		{ name: 'Cancer', symbol: String.fromCodePoint(0x264B)}, 
-		{ name: 'Leo', symbol: String.fromCodePoint(0x264C)}, 
-		{ name: 'Virgo', symbol: String.fromCodePoint(0x264D)}, 
-		{ name: 'Libra', symbol: String.fromCodePoint(0x264E)}, 
-		{ name: 'Scorpio', symbol: String.fromCodePoint(0x264F)}, 
-		{ name: 'Sagittarius', symbol: String.fromCodePoint(0x2650)}, 
-		{ name: 'Capricorn', symbol: String.fromCodePoint(0x2651)}, 
-		{ name: 'Aquarius', symbol: String.fromCodePoint(0x2652)}, 
-		{ name: 'Pisces', symbol: String.fromCodePoint(0x2653)}, 
+		{ name: 'Aries', symbol: String.fromCodePoint(0x2648), planet: 'Mars', }, 
+		{ name: 'Taurus', symbol: String.fromCodePoint(0x2649), planet: 'Venus', }, 
+		{ name: 'Gemini', symbol: String.fromCodePoint(0x264A), planet: 'Mercury', },
+		{ name: 'Cancer', symbol: String.fromCodePoint(0x264B), planet: 'Moon', }, 
+		{ name: 'Leo', symbol: String.fromCodePoint(0x264C), planet: 'Sun', }, 
+		{ name: 'Virgo', symbol: String.fromCodePoint(0x264D), planet: 'Mercury', }, 
+		{ name: 'Libra', symbol: String.fromCodePoint(0x264E), planet: 'Venus', }, 
+		{ name: 'Scorpio', symbol: String.fromCodePoint(0x264F), planet: 'Mars', secondaryPlanet: 'Pluto', }, 
+		{ name: 'Sagittarius', symbol: String.fromCodePoint(0x2650), planet: 'Jupiter', }, 
+		{ name: 'Capricorn', symbol: String.fromCodePoint(0x2651), planet: 'Saturn', }, 
+		{ name: 'Aquarius', symbol: String.fromCodePoint(0x2652), planet: 'Saturn', secondaryPlanet: 'Uranus', }, 
+		{ name: 'Pisces', symbol: String.fromCodePoint(0x2653), planet: 'Jupiter', secondaryPlanet: 'Neptune', }, 
 	    ],
 	    thePlanets: [
 		{ order: 1, name: 'Moon', symbol: String.fromCodePoint(0x263D), size: 20, color: '#555' }, 
@@ -5904,22 +5958,24 @@ var app = new Vue({
 					    if (angleDiff > 180) { angleDiff = 360 - angleDiff; }
 
 					    aspects[p1.name][p2.name].angle = angleDiff;
+					    aspects[p1.name][p2.name].p1angle = p1angle;
+					    aspects[p1.name][p2.name].p2angle = p2angle;
 					    var maxOrb = 2;
 					    if (Math.abs(angleDiff - 0) < maxOrb) { 
 						    aspects[p1.name][p2.name].aspect = 'Conjunct';
-						    aspects[p1.name][p2.name].strength = Math.abs(angleDiff - 0) / maxOrb;
+						    aspects[p1.name][p2.name].strength = (angleDiff - 0) / maxOrb;
 					    } else if (Math.abs(angleDiff - 180) < maxOrb) { 
 						    aspects[p1.name][p2.name].aspect = 'Opposition';
-						    aspects[p1.name][p2.name].strength = Math.abs(angleDiff - 180) / maxOrb;
+						    aspects[p1.name][p2.name].strength = (angleDiff - 180) / maxOrb;
 					    } else if (Math.abs(angleDiff - 120) < maxOrb) { 
 						    aspects[p1.name][p2.name].aspect = 'Trine';
-						    aspects[p1.name][p2.name].strength = Math.abs(angleDiff - 120) / maxOrb;
+						    aspects[p1.name][p2.name].strength = (angleDiff - 120) / maxOrb;
 					    } else if (Math.abs(angleDiff - 90) < maxOrb) { 
 						    aspects[p1.name][p2.name].aspect = 'Square';
-						    aspects[p1.name][p2.name].strength = Math.abs(angleDiff - 90) / maxOrb;
+						    aspects[p1.name][p2.name].strength = (angleDiff - 90) / maxOrb;
 					    } else if (Math.abs(angleDiff - 60) < maxOrb / 2) { 
 						    aspects[p1.name][p2.name].aspect = 'Sextile';
-						    aspects[p1.name][p2.name].strength = Math.abs(angleDiff - 60) / maxOrb / 2;
+						    aspects[p1.name][p2.name].strength = (angleDiff - 60) / maxOrb / 2;
 					    } else {
 						    delete aspects[p1.name][p2.name];
 					    }
@@ -6065,6 +6121,13 @@ var app = new Vue({
 		    rads = secondAngle - firstAngle;
 		    degs = 50 + (rads * 180 / Math.PI);
 		    return -degs;
+	    },
+	    angleSign: function(angle) {
+		    var t = this;
+		    angle = t.normalizeAngle(-angle + 15);
+		    var theZodiac = t.theZodiac;
+		    var angleDodecan = ~~(angle / 30);
+		    return theZodiac[angleDodecan];
 	    },
 	    calculateCelestialPosition: function(date, bodyName) {
 		    var $root = this.$root;

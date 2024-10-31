@@ -27,6 +27,95 @@ table td {
 	margin: 0;
 }
 
+@media (orientation: portrait) {
+	.control-box {
+		position: absolute;
+		height: 1vh;
+		width: 1vw;
+	}
+
+	.control-box .control-button {
+		font-size: 2.1vh;
+		margin: 0.1vh;
+		padding: 0.1vh;
+		border: 0.1vh solid #666;
+	}
+
+	.control-box .date-shown td, .control-box .date-controls td {
+		font-size: 3.1vh;
+	}
+
+	.control-box .date-shown td.dst-indicator {
+		font-size: 1.3vh;
+	}
+
+	.control-box .control-text {
+		margin: 0.1vh;
+		padding: 0.1vh;
+		font-size: 2.1vh;
+	}
+}
+
+@media (orientation: landscape) {
+	.control-box {
+		position: absolute;
+		height: 1px;
+		width: 1px;
+	}
+
+	.control-box .date-shown td.dst-indicator {
+		font-size: 10px;
+	}
+}
+
+.date-shown {
+	color: white;
+	background-color: rgba(255, 255, 255, .05);
+	position: absolute;
+	top: 0px;
+	left: 0px;
+}
+
+.date-controls {
+	color: white;
+	background-color: rgba(255, 255, 255, .05);
+	position: absolute;
+	top: 10vh;
+	left: 1vw;
+	width: 1vw;
+	height: 1vh;
+}
+
+.control-text {
+	display: inline-block;
+	margin: 3px;
+	padding: 3px;
+	font-size: 10px;
+	font-family: Calibri;
+	color: #CCC;
+}
+
+.control-button {
+	display: inline-block;
+	margin: 3px;
+	padding: 3px;
+	font-size: 10px;
+	font-weight: bold;
+	font-family: Calibri;
+	color: #AAA;
+	background-color: #333;
+	border: 1px solid #666;
+	cursor: pointer;
+}
+
+.control-button:hover {
+	color: #FFF;
+}
+
+.control-button.on {
+	background-color: #555;
+}
+
 .date-shown td {
 	text-align: center;
 }
@@ -73,7 +162,7 @@ table td {
 .constellation-divider {
 	width: 1px;
 	height: 500px;
-	border-left: 1px solid rgba(255, 255, 255, .5);
+	border-left: 1px solid rgba(255, 255, 255, .2);
 	position: absolute;
 	transform: translate(-50%, -50%);
 }
@@ -189,52 +278,6 @@ table td {
 	color: white;
 	position: absolute;
 	height: 500px;
-}
-
-.date-shown {
-	color: white;
-	background-color: rgba(255, 255, 255, .05);
-	position: absolute;
-	top: 5px;
-	left: 5px;
-}
-
-.date-controls {
-	color: white;
-	background-color: rgba(255, 255, 255, .05);
-	position: absolute;
-	top: 65px;
-	left: 5px;
-}
-
-.control-text {
-	display: inline-block;
-	margin: 3px;
-	padding: 3px;
-	font-size: 10px;
-	font-family: Calibri;
-	color: #CCC;
-}
-
-.control-button {
-	display: inline-block;
-	margin: 3px;
-	padding: 3px;
-	font-size: 10px;
-	font-weight: bold;
-	font-family: Calibri;
-	color: #AAA;
-	background-color: #333;
-	border: 1px solid #666;
-	cursor: pointer;
-}
-
-.control-button:hover {
-	color: #FFF;
-}
-
-.control-button.on {
-	background-color: #555;
 }
 
 .shader-container {
