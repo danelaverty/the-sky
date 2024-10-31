@@ -64,7 +64,7 @@ Vue.component('a-planet', {
 					//'<div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>' +
 					'<div v-if="planet.name == \'Moon\'" class="moon-shader" ' +
 						':style="{ ' +
-							'transform: \'rotate(\' + (180 - 88 + $root.angleFromMoonToSun() - $root.moonAngle - ($root.visibleSkyUp ? $root.theCenterRotation : 0)) + \'deg)\', ' +
+							'transform: \'rotate(\' + (180 - 90 + $root.sunAngle - $root.moonAngle - ($root.visibleSkyUp ? $root.theCenterRotation : 0)) + \'deg)\', ' +
 						'}" ' +
 					'></div>' +
 				'</div>' +
@@ -190,353 +190,9 @@ Vue.component('a-line', {
 		'',
 });
 
-Vue.component('sky-viewer', {
+Vue.component('the-sky', {
 	template: '' +
-		'<div class="sky-viewer" ' +
-			'>' +
-			'<div class="the-center" id="the-center" ' +
-				':style="{ ' +				
-					'transform: ' +
-						'$root.visibleSkyUp ? (\'rotate(\' + $root.theCenterRotation + \'deg)\') : null' +
-					', ' +
-				'} "' +
-				'>' +
-				'<div class="the-earth"></div>' +
-				'<div class="the-constellations-circle">' +
-				'</div>' +
-				'<div class="constellation-divider"' + 
-					'v-if="$root.showDivisions" ' +
-					'v-for="(constellation, i) in $root.theZodiac" ' +
-					':style="{ transform: \'translate(-50%, -50%) rotate(\' + (i * (-360 / 12) + 360 / 24) + \'deg)\', }" ' +
-				'></div>' +
-				'<div ' +
-					'v-for="(constellation, i) in $root.theZodiac" ' +
-					'class="a-constellation" ' +
-					':style="{ transform: \'translate(-50%, -50%) rotate(\' + (i * (-360 / 12)) + \'deg)\', }" ' +
-					'>' +
-					'<div class="constellation-name" v-if="!$root.useSymbols">{{ constellation.name }}</div>' +
-					'<div class="constellation-symbol" v-if="$root.useSymbols">{{ constellation.symbol }}</div>' +
-				'</div>' +
-				'<div class="planet-circle major" ' +
-					'v-for="(planet, i) in $root.thePlanets" ' +
-					':style="{ ' +
-						'height: (100 + 32 * planet.order) + \'px\', ' +
-						'width: (100 + 32 * planet.order) + \'px\', ' +
-						'}" ' +
-					'>' +
-				'</div>' +
-				'<a-planet ' +
-					'v-for="(planet, i) in $root.thePlanets" ' +
-					':key="planet.order" ' +
-					':planet="planet" ' +
-					'>' +
-				'</a-planet>' +
-				'<a-planet ' +
-					':planet="{ name: \'NN\', symbol: String.fromCodePoint(0x260A), color: \'black\', order: 4, size: 5, }" ' +
-					'>' +
-				'</a-planet>' +
-				'<a-planet ' +
-					':planet="{ name: \'SN\', symbol: String.fromCodePoint(0x260B), color: \'black\', order: 4, size: 5, }" ' +
-					'>' +
-				'</a-planet>' +
-				'<div v-if="$root.showLasers" class="planet-laser" ' +
-					'v-for="(planet, i) in $root.thePlanets" ' +
-					':key="planet.order" ' +
-					':style="{ transform: \'rotate(\' + (180 + $root.planetAngle(planet.name)) + \'deg)\', }" ' +
-					'>' +
-				'</div>' +
-				/*'<div class="planet-circle minor" ' +
-					'v-for="(planet, i) in $root.theMinorPlanets" ' +
-					':style="{ ' +
-						'height: (80 + 100 + 32 * planet.order) + \'px\', ' +
-						'width: (80 + 100 + 32 * planet.order) + \'px\', ' +
-						'}" ' +
-					'>' +
-					'>' +
-				'</div>' +
-				'<a-planet ' +
-					'v-for="(planet, i) in $root.theMinorPlanets" ' +
-					':key="planet.order" ' +
-					':planet="planet" ' +
-					':type="\'minor\'" ' +
-					'>' +
-				'</a-planet>' +*/
-				'<div v-for="(p1, p1name) in $root.aspects" :key="p1name" :id="p1name + \'-aspects\'">' +
-					'<div v-for="(p2, p2name) in p1" :key="p1name + \'-\' + p2name" :id="p1name + \'-\' + p2name + \'-aspect\'">' +
-						'<div ' +
-							'v-if="$root.showAspects" ' +
-							'class="planet-laser" ' +
-							':class="[ p2.aspect ]" ' +
-							':style="{ ' +
-								'transform: \'rotate(\' + (180 + $root.planetAngle(p1name)) + \'deg)\', ' +
-								'height: ((100 + 32 * $root.thePlanets.filter(function(planet) { return planet.name == p1name })[0].order) / 2) + \'px\', ' +
-							'}" ' +
-							'>' +
-						'</div>' +
-						'<div ' +
-							'v-if="$root.showAspects && p2.aspect != \'Conjunct\' && p2.aspect != \'Opposition\'" ' +
-							'class="planet-laser" ' +
-							':style="{ ' +
-								'transform: \'rotate(\' + (180 + $root.planetAngle(p1name)) + \'deg)\', ' +
-								'height: (20) + \'px\', ' +
-								'borderLeft: \'unset\', ' +
-							'}" ' +
-							'>' +
-							'<div ' +
-								'v-if="(p2.p1angle - p2.p2angle < 180 && p2.p1angle - p2.p2angle) > 0 || p2.p1angle - p2.p2angle < -180" ' +
-								'class="planet-laser" ' +
-								':class="[ p2.aspect ]" ' +
-								':style="{ ' +
-									'transform: ' +
-										'\'rotate(\' + (p2.aspect == \'Square\' ? 90 : ( p2.aspect == \'Trine\' ? (30) : 60)) + \'deg)\' ' +
-										//' + \'scaleY(\' + (p2.p1angle - p2.p2angle > 180 ? -1 : 1) + \')\'' +
-										', ' +
-									'transformOrigin: \'bottom left\', ' +
-									'height: 20 + \'px\', ' +
-								'}" ' +
-								'>' +
-								'<div ' +
-									'v-if="p2.aspect == \'Square\' || p2.aspect == \'Trine\'" ' +
-									'class="planet-laser" ' +
-									':class="[ p2.aspect ]" ' +
-									':style="{ ' +
-										'transform: \'rotate(\' + (p2.aspect == \'Square\' ? 90 : 180) + \'deg)\', ' +
-										'transformOrigin: \'top left\', ' +
-										'height: (p2.aspect == \'Square\' ? 20 : 15) + \'px\', ' +
-									'}" ' +
-									'>' +
-								'</div>' +
-							'</div>' +
-						'</div>' +
-					'</div>' +
-				'</div>' +
-				/*'<a-line ' +
-					'v-for="line in $root.theLines" ' +
-					':line="line" ' +
-					':key="\'F\' + line.fromID + \'T\' + line.toID" ' +
-					':id="\'F\' + line.fromID + \'T\' + line.toID" ' +
-					'>' +
-				'</a-line>' +*/
-'<div v-show="$root.showLines">' +
-'<div class="a-line" id="FHamalTBharani" style="transform: translate(-50%, -50%) rotate(8.20667deg); height: 629.58px;"><div class="the-visible-line" style="height: 58.8805px; transform: rotate(86.1505deg);"></div></div>' +
-'<div class="a-line" id="FSheratanTHamal" style="transform: translate(-50%, -50%) rotate(11.34deg); height: 622.008px;"><div class="the-visible-line" style="height: 17.5228px; transform: rotate(100.911deg);"></div></div>' +
-'<div class="a-line" id="FMesarthimTSheratan" style="transform: translate(-50%, -50%) rotate(11.6175deg); height: 614.966px;"><div class="the-visible-line" style="height: 3.82417px; transform: rotate(156.807deg);"></div></div>' +
-'<div class="a-line" id="FChamukuyTAldebaran" style="transform: translate(-50%, -50%) rotate(-27.1656deg); height: 556.499px;"><div class="the-visible-line" style="height: 8.91677px; transform: rotate(97.0692deg);"></div></div>' +
-'<div class="a-line" id="FPrima HyadumTChamukuy" style="transform: translate(-50%, -50%) rotate(-24.9483deg); height: 556.262px;"><div class="the-visible-line" style="height: 10.7652px; transform: rotate(89.5233deg);"></div></div>' +
-'<div class="a-line" id="FPrima HyadumTSecunda Hyadum" style="transform: translate(-50%, -50%) rotate(-24.9483deg); height: 556.262px;"><div class="the-visible-line" style="height: 6.00415px; transform: rotate(139.8deg);"></div></div>' +
-'<div class="a-line" id="F292140TPrima Hyadum" style="transform: translate(-50%, -50%) rotate(-20.1701deg); height: 543.092px;"><div class="the-visible-line" style="height: 23.8385px; transform: rotate(103.623deg);"></div></div>' +
-'<div class="a-line" id="FSecunda HyadumTAin" style="transform: translate(-50%, -50%) rotate(-25.7337deg); height: 565.477px;"><div class="the-visible-line" style="height: 8.00834px; transform: rotate(117.513deg);"></div></div>' +
-'<div class="a-line" id="F341266TElnath" style="transform: translate(-50%, -50%) rotate(-30.5613deg); height: 590.626px;"><div class="the-visible-line" style="height: 59.2304px; transform: rotate(96.7497deg);"></div></div>' +
-'<div class="a-line" id="FAinT341266" style="transform: translate(-50%, -50%) rotate(-27.1542deg); height: 573.051px;"><div class="the-visible-line" style="height: 19.3994px; transform: rotate(115.219deg);"></div></div>' +
-'<div class="a-line" id="FAldebaranTTianguan" style="transform: translate(-50%, -50%) rotate(-28.98deg); height: 558.969px;"><div class="the-visible-line" style="height: 76.9043px; transform: rotate(89.3343deg);"></div></div>' +
-'<div class="a-line" id="F254098T292140" style="transform: translate(-50%, -50%) rotate(-11.7923deg); height: 535.336px;"><div class="the-visible-line" style="height: 39.5759px; transform: rotate(91.4241deg);"></div></div>' +
-'<div class="a-line" id="F251435T254098" style="transform: translate(-50%, -50%) rotate(-11.2033deg); height: 532.331px;"><div class="the-visible-line" style="height: 3.12696px; transform: rotate(118.371deg);"></div></div>' +
-'<div class="a-line" id="FMekbudaTWasat" style="transform: translate(-50%, -50%) rotate(-66.0272deg); height: 572.267px;"><div class="the-visible-line" style="height: 20.3856px; transform: rotate(97.4864deg);"></div></div>' +
-'<div class="a-line" id="FAlhenaTMekbuda" style="transform: translate(-50%, -50%) rotate(-59.4279deg); height: 552.113px;"><div class="the-visible-line" style="height: 33.8855px; transform: rotate(103.968deg);"></div></div>' +
-'<div class="a-line" id="F685540TWasat" style="transform: translate(-50%, -50%) rotate(-69.5232deg); height: 551.822px;"><div class="the-visible-line" style="height: 13.8162px; transform: rotate(169.304deg);"></div></div>' +
-'<div class="a-line" id="FAlzirrT685540" style="transform: translate(-50%, -50%) rotate(-61.3224deg); height: 534.377px;"><div class="the-visible-line" style="height: 39.7959px; transform: rotate(98.5221deg);"></div></div>' +
-'<div class="a-line" id="FWasatT739235" style="transform: translate(-50%, -50%) rotate(-70.0307deg); height: 578.994px;"><div class="the-visible-line" style="height: 23.7265px; transform: rotate(118.86deg);"></div></div>' +
-'<div class="a-line" id="F739235TPollux" style="transform: translate(-50%, -50%) rotate(-73.9806deg); height: 603.328px;"><div class="the-visible-line" style="height: 12.738px; transform: rotate(101.463deg);"></div></div>' +
-'<div class="a-line" id="F708959TCastor" style="transform: translate(-50%, -50%) rotate(-71.4316deg); height: 607.978px;"><div class="the-visible-line" style="height: 15.6976px; transform: rotate(129.227deg);"></div></div>' +
-'<div class="a-line" id="F739235T764688" style="transform: translate(-50%, -50%) rotate(-73.9806deg); height: 603.328px;"><div class="the-visible-line" style="height: 12.7566px; transform: rotate(59.4418deg);"></div></div>' +
-'<div class="a-line" id="F708959T739235" style="transform: translate(-50%, -50%) rotate(-71.4316deg); height: 607.978px;"><div class="the-visible-line" style="height: 13.67px; transform: rotate(78.9355deg);"></div></div>' +
-'<div class="a-line" id="F663843T708959" style="transform: translate(-50%, -50%) rotate(-67.7849deg); height: 620.485px;"><div class="the-visible-line" style="height: 20.5179px; transform: rotate(70.4511deg);"></div></div>' +
-'<div class="a-line" id="FMebsutaT708959" style="transform: translate(-50%, -50%) rotate(-60.983deg); height: 595.593px;"><div class="the-visible-line" style="height: 55.1414px; transform: rotate(91.1981deg);"></div></div>' +
-'<div class="a-line" id="F543342TMebsuta" style="transform: translate(-50%, -50%) rotate(-57.2408deg); height: 571.441px;"><div class="the-visible-line" style="height: 22.5532px; transform: rotate(120.481deg);"></div></div>' +
-'<div class="a-line" id="FTejatTMebsuta" style="transform: translate(-50%, -50%) rotate(-55.7401deg); height: 583.139px;"><div class="the-visible-line" style="height: 27.6638px; transform: rotate(100.369deg);"></div></div>' +
-'<div class="a-line" id="FPropusTTejat" style="transform: translate(-50%, -50%) rotate(-53.7194deg); height: 583.373px;"><div class="the-visible-line" style="height: 10.285px; transform: rotate(88.3631deg);"></div></div>' +
-'<div class="a-line" id="F483362TPropus" style="transform: translate(-50%, -50%) rotate(-51.0301deg); height: 587.536px;"><div class="the-visible-line" style="height: 13.8952px; transform: rotate(80.0434deg);"></div></div>' +
-'<div class="a-line" id="FAsellus AustralisTAcubens" style="transform: translate(-50%, -50%) rotate(-91.1713deg); height: 560.747px;"><div class="the-visible-line" style="height: 22.4314px; transform: rotate(45.3361deg);"></div></div>' +
-'<div class="a-line" id="FAsellus BorealisTAsellus Australis" style="transform: translate(-50%, -50%) rotate(-90.8214deg); height: 577.242px;"><div class="the-visible-line" style="height: 8.43081px; transform: rotate(11.7146deg);"></div></div>' +
-'<div class="a-line" id="FAsellus BorealisT917770" style="transform: translate(-50%, -50%) rotate(-90.8214deg); height: 577.242px;"><div class="the-visible-line" style="height: 18.8468px; transform: rotate(165.972deg);"></div></div>' +
-'<div class="a-line" id="FTarfTAsellus Australis" style="transform: translate(-50%, -50%) rotate(-84.1288deg); height: 514.885px;"><div class="the-visible-line" style="height: 40.1859px; transform: rotate(121.198deg);"></div></div>' +
-'<div class="a-line" id="FAlgiebaTZosma" style="transform: translate(-50%, -50%) rotate(-114.992deg); height: 583.414px;"><div class="the-visible-line" style="height: 70.9573px; transform: rotate(92.286deg);"></div></div>' +
-'<div class="a-line" id="FZosmaTDenebola" style="transform: translate(-50%, -50%) rotate(-128.527deg); height: 605.905px;"><div class="the-visible-line" style="height: 46.104px; transform: rotate(77.9871deg);"></div></div>' +
-'<div class="a-line" id="FChertanTDenebola" style="transform: translate(-50%, -50%) rotate(-128.56deg); height: 580.492px;"><div class="the-visible-line" style="height: 45.035px; transform: rotate(93.9936deg);"></div></div>' +
-'<div class="a-line" id="FRegulusTChertan" style="transform: translate(-50%, -50%) rotate(-112.094deg); height: 541.128px;"><div class="the-visible-line" style="height: 82.6375px; transform: rotate(95.4002deg);"></div></div>' +
-'<div class="a-line" id="FRegulusT1061687" style="transform: translate(-50%, -50%) rotate(-112.094deg); height: 541.128px;"><div class="the-visible-line" style="height: 11.9289px; transform: rotate(186.822deg);"></div></div>' +
-'<div class="a-line" id="F1061687TAlgieba" style="transform: translate(-50%, -50%) rotate(-111.833deg); height: 564.862px;"><div class="the-visible-line" style="height: 18.3453px; transform: rotate(118.8deg);"></div></div>' +
-'<div class="a-line" id="FAdhaferaTAlgieba" style="transform: translate(-50%, -50%) rotate(-114.173deg); height: 600.428px;"><div class="the-visible-line" style="height: 9.50178px; transform: rotate(26.0552deg);"></div></div>' +
-'<div class="a-line" id="FRasalasTAdhafera" style="transform: translate(-50%, -50%) rotate(-108.191deg); height: 607.995px;"><div class="the-visible-line" style="height: 31.7505px; transform: rotate(80.1788deg);"></div></div>' +
-'<div class="a-line" id="FRas Elased AustralisTRasalas" style="transform: translate(-50%, -50%) rotate(-106.463deg); height: 595.561px;"><div class="the-visible-line" style="height: 11.0006px; transform: rotate(123.555deg);"></div></div>' +
-'<div class="a-line" id="F1460530T1483603" style="transform: translate(-50%, -50%) rotate(-181.562deg); height: 667.109px;"><div class="the-visible-line" style="height: 25.6556px; transform: rotate(105.138deg);"></div></div>' +
-'<div class="a-line" id="FHezeT1397226" style="transform: translate(-50%, -50%) rotate(-163.673deg); height: 592.981px;"><div class="the-visible-line" style="height: 40.2312px; transform: rotate(112.628deg);"></div></div>' +
-'<div class="a-line" id="F1397226T1460530" style="transform: translate(-50%, -50%) rotate(-170.412deg); height: 626.621px;"><div class="the-visible-line" style="height: 65.9951px; transform: rotate(102.201deg);"></div></div>' +
-'<div class="a-line" id="FKangT1456034" style="transform: translate(-50%, -50%) rotate(-173.224deg); height: 577.287px;"><div class="the-visible-line" style="height: 46.6104px; transform: rotate(118.098deg);"></div></div>' +
-'<div class="a-line" id="FSpicaTKang" style="transform: translate(-50%, -50%) rotate(-161.298deg); height: 532.3px;"><div class="the-visible-line" style="height: 60.8917px; transform: rotate(104.765deg);"></div></div>' +
-'<div class="a-line" id="FSpicaTHeze" style="transform: translate(-50%, -50%) rotate(-161.298deg); height: 532.3px;"><div class="the-visible-line" style="height: 32.495px; transform: rotate(157.785deg);"></div></div>' +
-'<div class="a-line" id="F1325111TSpica" style="transform: translate(-50%, -50%) rotate(-157.487deg); height: 548.153px;"><div class="the-visible-line" style="height: 19.6314px; transform: rotate(64.2994deg);"></div></div>' +
-'<div class="a-line" id="FPorrimaT1325111" style="transform: translate(-50%, -50%) rotate(-150.415deg); height: 547.229px;"><div class="the-visible-line" style="height: 33.7836px; transform: rotate(87.2467deg);"></div></div>' +
-'<div class="a-line" id="FMinelauvaTHeze" style="transform: translate(-50%, -50%) rotate(-153.901deg); height: 581.751px;"><div class="the-visible-line" style="height: 50.3415px; transform: rotate(91.4916deg);"></div></div>' +
-'<div class="a-line" id="FMinelauvaTVindemiatrix" style="transform: translate(-50%, -50%) rotate(-153.901deg); height: 581.751px;"><div class="the-visible-line" style="height: 23.0914px; transform: rotate(157.181deg);"></div></div>' +
-'<div class="a-line" id="FPorrimaTMinelauva" style="transform: translate(-50%, -50%) rotate(-150.415deg); height: 547.229px;"><div class="the-visible-line" style="height: 24.3406px; transform: rotate(133.401deg);"></div></div>' +
-'<div class="a-line" id="FZaniahTPorrima" style="transform: translate(-50%, -50%) rotate(-144.976deg); height: 536.161px;"><div class="the-visible-line" style="height: 26.2882px; transform: rotate(99.427deg);"></div></div>' +
-'<div class="a-line" id="FZavijavaTZaniah" style="transform: translate(-50%, -50%) rotate(-137.674deg); height: 530.483px;"><div class="the-visible-line" style="height: 34.0816px; transform: rotate(91.1147deg);"></div></div>' +
-'<div class="a-line" id="FZubenelgenubiTZubeneschamali" style="transform: translate(-50%, -50%) rotate(-182.72deg); height: 581.416px;"><div class="the-visible-line" style="height: 44.3243px; transform: rotate(125.214deg);"></div></div>' +
-'<div class="a-line" id="FZubenelgenubiTBrachium" style="transform: translate(-50%, -50%) rotate(-182.72deg); height: 581.416px;"><div class="the-visible-line" style="height: 23.8558px; transform: rotate(41.212deg);"></div></div>' +
-'<div class="a-line" id="FBrachiumTZubeneschamali" style="transform: translate(-50%, -50%) rotate(-186.018deg); height: 546.429px;"><div class="the-visible-line" style="height: 48.091px; transform: rotate(158.072deg);"></div></div>' +
-'<div class="a-line" id="FZubeneschamaliTZubenelhakrabi" style="transform: translate(-50%, -50%) rotate(-189.252deg); height: 636.673px;"><div class="the-visible-line" style="height: 26.1912px; transform: rotate(74.2002deg);"></div></div>' +
-'<div class="a-line" id="FZubenelhakrabiT1561678" style="transform: translate(-50%, -50%) rotate(-193.882deg); height: 624.446px;"><div class="the-visible-line" style="height: 25.0861px; transform: rotate(92.3532deg);"></div></div>' +
-'<div class="a-line" id="FBrachiumT1534623" style="transform: translate(-50%, -50%) rotate(-186.018deg); height: 546.429px;"><div class="the-visible-line" style="height: 40.1808px; transform: rotate(94.77deg);"></div></div>' +
-'<div class="a-line" id="FDschubbaTAcrab" style="transform: translate(-50%, -50%) rotate(-200.083deg); height: 603.691px;"><div class="the-visible-line" style="height: 11.1428px; transform: rotate(141.625deg);"></div></div>' +
-'<div class="a-line" id="FAcrabTJabbah" style="transform: translate(-50%, -50%) rotate(-201.359deg); height: 621.315px;"><div class="the-visible-line" style="height: 9.44571px; transform: rotate(108.137deg);"></div></div>' +
-'<div class="a-line" id="FDschubbaTFang" style="transform: translate(-50%, -50%) rotate(-200.083deg); height: 603.691px;"><div class="the-visible-line" style="height: 9.45351px; transform: rotate(-5.5411deg);"></div></div>' +
-'<div class="a-line" id="FFangTIklil" style="transform: translate(-50%, -50%) rotate(-199.713deg); height: 585.184px;"><div class="the-visible-line" style="height: 8.805px; transform: rotate(-8.0815deg);"></div></div>' +
-'<div class="a-line" id="FDschubbaTAlniyat" style="transform: translate(-50%, -50%) rotate(-200.083deg); height: 603.691px;"><div class="the-visible-line" style="height: 27.4396px; transform: rotate(86.3631deg);"></div></div>' +
-'<div class="a-line" id="FAlniyatTAntares" style="transform: translate(-50%, -50%) rotate(-205.297deg); height: 602.705px;"><div class="the-visible-line" style="height: 10.8214px; transform: rotate(91.0906deg);"></div></div>' +
-'<div class="a-line" id="FAntaresTPaikauhale" style="transform: translate(-50%, -50%) rotate(-207.352deg); height: 603.506px;"><div class="the-visible-line" style="height: 8.87534px; transform: rotate(72.2002deg);"></div></div>' +
-'<div class="a-line" id="FPaikauhaleTLarawag" style="transform: translate(-50%, -50%) rotate(-208.971deg); height: 598.319px;"><div class="the-visible-line" style="height: 21.5493px; transform: rotate(56.2539deg);"></div></div>' +
-'<div class="a-line" id="FLarawagTXamidimura" style="transform: translate(-50%, -50%) rotate(-212.541deg); height: 575.495px;"><div class="the-visible-line" style="height: 9.20743px; transform: rotate(13.0331deg);"></div></div>' +
-'<div class="a-line" id="FXamidimuraT1662549" style="transform: translate(-50%, -50%) rotate(-212.968deg); height: 557.563px;"><div class="the-visible-line" style="height: 10.6425px; transform: rotate(17.3853deg);"></div></div>' +
-'<div class="a-line" id="F1662549T1694599" style="transform: translate(-50%, -50%) rotate(-213.646deg); height: 537.299px;"><div class="the-visible-line" style="height: 20.7116px; transform: rotate(92.1965deg);"></div></div>' +
-'<div class="a-line" id="F1694599TSargas" style="transform: translate(-50%, -50%) rotate(-218.038deg); height: 540.467px;"><div class="the-visible-line" style="height: 30.2584px; transform: rotate(95.5613deg);"></div></div>' +
-'<div class="a-line" id="FLesathTShaula" style="transform: translate(-50%, -50%) rotate(-222.691deg); height: 576.414px;"><div class="the-visible-line" style="height: 3.68671px; transform: rotate(103.274deg);"></div></div>' +
-'<div class="a-line" id="FSargasT1765472" style="transform: translate(-50%, -50%) rotate(-224.33deg); height: 549.644px;"><div class="the-visible-line" style="height: 14.9958px; transform: rotate(122.285deg);"></div></div>' +
-'<div class="a-line" id="F1754884T1765472" style="transform: translate(-50%, -50%) rotate(-225.622deg); height: 570.685px;"><div class="the-visible-line" style="height: 6.70078px; transform: rotate(69.9709deg);"></div></div>' +
-'<div class="a-line" id="FShaulaT1754884" style="transform: translate(-50%, -50%) rotate(-223.402deg); height: 578.159px;"><div class="the-visible-line" style="height: 11.7372px; transform: rotate(70.3256deg);"></div></div>' +
-'<div class="a-line" id="FYed PriorTYed Posterior" style="transform: translate(-50%, -50%) rotate(-203.586deg); height: 707.828px;"><div class="the-visible-line" style="height: 6.24898px; transform: rotate(78.257deg);"></div></div>' +
-'<div class="a-line" id="FYed PosteriorT1633277" style="transform: translate(-50%, -50%) rotate(-204.58deg); height: 705.399px;"><div class="the-visible-line" style="height: 30.0059px; transform: rotate(70.0939deg);"></div></div>' +
-'<div class="a-line" id="F1633277TSabik" style="transform: translate(-50%, -50%) rotate(-209.29deg); height: 687.277px;"><div class="the-visible-line" style="height: 49.6533px; transform: rotate(80.1196deg);"></div></div>' +
-'<div class="a-line" id="FSabikTCebalrai" style="transform: translate(-50%, -50%) rotate(-217.595deg); height: 677.347px;"><div class="the-visible-line" style="height: 76.7515px; transform: rotate(132.309deg);"></div></div>' +
-'<div class="a-line" id="FRasalhagueTCebalrai" style="transform: translate(-50%, -50%) rotate(-223.733deg); height: 826.83px;"><div class="the-visible-line" style="height: 24.2156px; transform: rotate(37.3552deg);"></div></div>' +
-'<div class="a-line" id="F1668004TRasalhague" style="transform: translate(-50%, -50%) rotate(-214.417deg); height: 797.421px;"><div class="the-visible-line" style="height: 67.5616px; transform: rotate(97.872deg);"></div></div>' +
-'<div class="a-line" id="FYed PriorT1668004" style="transform: translate(-50%, -50%) rotate(-203.586deg); height: 707.828px;"><div class="the-visible-line" style="height: 83.8666px; transform: rotate(116.707deg);"></div></div>' +
-'<div class="a-line" id="FSabikT1712828" style="transform: translate(-50%, -50%) rotate(-217.595deg); height: 677.347px;"><div class="the-visible-line" style="height: 26.8542px; transform: rotate(36.8676deg);"></div></div>' +
-'<div class="a-line" id="F1712828T1723545" style="transform: translate(-50%, -50%) rotate(-220.502deg); height: 635.199px;"><div class="the-visible-line" style="height: 13.4543px; transform: rotate(32.063deg);"></div></div>' +
-'<div class="a-line" id="F1623087T1633277" style="transform: translate(-50%, -50%) rotate(-207.785deg); height: 653.619px;"><div class="the-visible-line" style="height: 18.9936px; transform: rotate(151.632deg);"></div></div>' +
-'<div class="a-line" id="F1615993T1623087" style="transform: translate(-50%, -50%) rotate(-206.756deg); height: 641.965px;"><div class="the-visible-line" style="height: 8.23141px; transform: rotate(134.528deg);"></div></div>' +
-'<div class="a-line" id="F1610915T1615993" style="transform: translate(-50%, -50%) rotate(-206.026deg); height: 632.287px;"><div class="the-visible-line" style="height: 6.32014px; transform: rotate(139.665deg);"></div></div>' +
-'<div class="a-line" id="F1610915T1613517" style="transform: translate(-50%, -50%) rotate(-206.026deg); height: 632.287px;"><div class="the-visible-line" style="height: 8.31752px; transform: rotate(13.8637deg);"></div></div>' +
-'<div class="a-line" id="FPolisTKaus Borealis" style="transform: translate(-50%, -50%) rotate(-233.441deg); height: 664.525px;"><div class="the-visible-line" style="height: 23.0224px; transform: rotate(59.839deg);"></div></div>' +
-'<div class="a-line" id="FAlnaslTKaus Media" style="transform: translate(-50%, -50%) rotate(-231.452deg); height: 617.226px;"><div class="the-visible-line" style="height: 20.5807px; transform: rotate(93.0467deg);"></div></div>' +
-'<div class="a-line" id="F1765413TAlnasl" style="transform: translate(-50%, -50%) rotate(-226.89deg); height: 627.712px;"><div class="the-visible-line" style="height: 25.3206px; transform: rotate(75.7909deg);"></div></div>' +
-'<div class="a-line" id="FKaus MediaTKaus Borealis" style="transform: translate(-50%, -50%) rotate(-235.249deg); height: 620.787px;"><div class="the-visible-line" style="height: 14.5522px; transform: rotate(137.775deg);"></div></div>' +
-'<div class="a-line" id="FKaus MediaTKaus Australis" style="transform: translate(-50%, -50%) rotate(-235.249deg); height: 620.787px;"><div class="the-visible-line" style="height: 12.1693px; transform: rotate(19.92deg);"></div></div>' +
-'<div class="a-line" id="F1842810TKaus Australis" style="transform: translate(-50%, -50%) rotate(-234.407deg); height: 586.107px;"><div class="the-visible-line" style="height: 10.3228px; transform: rotate(124.205deg);"></div></div>' +
-'<div class="a-line" id="FKaus BorealisT1914343" style="transform: translate(-50%, -50%) rotate(-236.993deg); height: 642.632px;"><div class="the-visible-line" style="height: 25.0662px; transform: rotate(76.7721deg);"></div></div>' +
-'<div class="a-line" id="F1914343TNunki" style="transform: translate(-50%, -50%) rotate(-241.414deg); height: 633.041px;"><div class="the-visible-line" style="height: 13.3172px; transform: rotate(92.5923deg);"></div></div>' +
-'<div class="a-line" id="FNunkiT1969933" style="transform: translate(-50%, -50%) rotate(-243.816deg); height: 634.807px;"><div class="the-visible-line" style="height: 16.7518px; transform: rotate(71.8286deg);"></div></div>' +
-'<div class="a-line" id="F1914343TAscella" style="transform: translate(-50%, -50%) rotate(-241.414deg); height: 633.041px;"><div class="the-visible-line" style="height: 24.7385px; transform: rotate(66.7945deg);"></div></div>' +
-'<div class="a-line" id="FAscellaT1969933" style="transform: translate(-50%, -50%) rotate(-245.653deg); height: 615.234px;"><div class="the-visible-line" style="height: 7.67992px; transform: rotate(129.771deg);"></div></div>' +
-'<div class="a-line" id="FNunkiT1964061" style="transform: translate(-50%, -50%) rotate(-243.816deg); height: 634.807px;"><div class="the-visible-line" style="height: 16.7839px; transform: rotate(126.67deg);"></div></div>' +
-'<div class="a-line" id="F1964061TAlbaldah" style="transform: translate(-50%, -50%) rotate(-246.171deg); height: 655.405px;"><div class="the-visible-line" style="height: 7.36059px; transform: rotate(98.0084deg);"></div></div>' +
-'<div class="a-line" id="F1946081T1964061" style="transform: translate(-50%, -50%) rotate(-244.433deg); height: 660.235px;"><div class="the-visible-line" style="height: 10.2655px; transform: rotate(75.5401deg);"></div></div>' +
-'<div class="a-line" id="FAlbaldahT2008520" style="transform: translate(-50%, -50%) rotate(-247.441deg); height: 657.615px;"><div class="the-visible-line" style="height: 18.2707px; transform: rotate(107.842deg);"></div></div>' +
-'<div class="a-line" id="F2008520T2008656" style="transform: translate(-50%, -50%) rotate(-250.418deg); height: 669.713px;"><div class="the-visible-line" style="height: 4.71941px; transform: rotate(179.021deg);"></div></div>' +
-'<div class="a-line" id="F1969933T2048705" style="transform: translate(-50%, -50%) rotate(-246.735deg); height: 625.165px;"><div class="the-visible-line" style="height: 40.723px; transform: rotate(88.7544deg);"></div></div>' +
-'<div class="a-line" id="F2048705T2107312" style="transform: translate(-50%, -50%) rotate(-254.177deg); height: 628.69px;"><div class="the-visible-line" style="height: 29.0523px; transform: rotate(67.613deg);"></div></div>' +
-'<div class="a-line" id="F2107312T2123017" style="transform: translate(-50%, -50%) rotate(-259.237deg); height: 607.634px;"><div class="the-visible-line" style="height: 8.06421px; transform: rotate(68.4016deg);"></div></div>' +
-'<div class="a-line" id="F2115042T2123017" style="transform: translate(-50%, -50%) rotate(-259.934deg); height: 565.626px;"><div class="the-visible-line" style="height: 18.5026px; transform: rotate(168.034deg);"></div></div>' +
-'<div class="a-line" id="F2102592T2115042" style="transform: translate(-50%, -50%) rotate(-258.815deg); height: 535.017px;"><div class="the-visible-line" style="height: 16.221px; transform: rotate(160.099deg);"></div></div>' +
-'<div class="a-line" id="FRukbatT2102592" style="transform: translate(-50%, -50%) rotate(-250.972deg); height: 555.083px;"><div class="the-visible-line" style="height: 37.54px; transform: rotate(71.6376deg);"></div></div>' +
-'<div class="a-line" id="FArkab PriorT2102592" style="transform: translate(-50%, -50%) rotate(-250.66deg); height: 536.315px;"><div class="the-visible-line" style="height: 38.7279px; transform: rotate(85.6923deg);"></div></div>' +
-'<div class="a-line" id="FAlgediTAlshat" style="transform: translate(-50%, -50%) rotate(-264.514deg); height: 668.765px;"><div class="the-visible-line" style="height: 4.03004px; transform: rotate(70.1973deg);"></div></div>' +
-'<div class="a-line" id="FAlgediTDabih" style="transform: translate(-50%, -50%) rotate(-264.514deg); height: 668.765px;"><div class="the-visible-line" style="height: 7.78341px; transform: rotate(32.9215deg);"></div></div>' +
-'<div class="a-line" id="FNashiraTDeneb Algedi" style="transform: translate(-50%, -50%) rotate(-285.023deg); height: 587.767px;"><div class="the-visible-line" style="height: 9.02004px; transform: rotate(79.3182deg);"></div></div>' +
-'<div class="a-line" id="F2274304TNashira" style="transform: translate(-50%, -50%) rotate(-276.487deg); height: 612.108px;"><div class="the-visible-line" style="height: 46.2674px; transform: rotate(70.5267deg);"></div></div>' +
-'<div class="a-line" id="FAlshatT2274304" style="transform: translate(-50%, -50%) rotate(-265.166deg); height: 666.084px;"><div class="the-visible-line" style="height: 68.5174px; transform: rotate(61.2632deg);"></div></div>' +
-'<div class="a-line" id="F2333785TDeneb Algedi" style="transform: translate(-50%, -50%) rotate(-284.27deg); height: 576.221px;"><div class="the-visible-line" style="height: 13.3046px; transform: rotate(107.323deg);"></div></div>' +
-'<div class="a-line" id="F2314277T2333785" style="transform: translate(-50%, -50%) rotate(-281.667deg); height: 569.952px;"><div class="the-visible-line" style="height: 13.3895px; transform: rotate(102.219deg);"></div></div>' +
-'<div class="a-line" id="F2276684T2314277" style="transform: translate(-50%, -50%) rotate(-276.782deg); height: 572.341px;"><div class="the-visible-line" style="height: 24.3687px; transform: rotate(84.7522deg);"></div></div>' +
-'<div class="a-line" id="F2245042T2276684" style="transform: translate(-50%, -50%) rotate(-272.955deg); height: 574.202px;"><div class="the-visible-line" style="height: 19.1623px; transform: rotate(85.3027deg);"></div></div>' +
-'<div class="a-line" id="F2231926T2245042" style="transform: translate(-50%, -50%) rotate(-271.524deg); height: 586.554px;"><div class="the-visible-line" style="height: 9.52286px; transform: rotate(48.8641deg);"></div></div>' +
-'<div class="a-line" id="FDabihT2231926" style="transform: translate(-50%, -50%) rotate(-265.253deg); height: 655.756px;"><div class="the-visible-line" style="height: 48.4556px; transform: rotate(41.3859deg);"></div></div>' +
-'<div class="a-line" id="FAlbaliT2246934" style="transform: translate(-50%, -50%) rotate(-271.919deg); height: 664.305px;"><div class="the-visible-line" style="height: 7.22701px; transform: rotate(85.3114deg);"></div></div>' +
-'<div class="a-line" id="F2246934TSadalsuud" style="transform: translate(-50%, -50%) rotate(-273.163deg); height: 663.276px;"><div class="the-visible-line" style="height: 56.0554px; transform: rotate(78.4573deg);"></div></div>' +
-'<div class="a-line" id="FSadalsuudTSadalmelik" style="transform: translate(-50%, -50%) rotate(-282.89deg); height: 650.2px;"><div class="the-visible-line" style="height: 48.4344px; transform: rotate(84.4536deg);"></div></div>' +
-'<div class="a-line" id="FSadalmelikTAncha" style="transform: translate(-50%, -50%) rotate(-291.446deg); height: 648.044px;"><div class="the-visible-line" style="height: 27.7476px; transform: rotate(31.4874deg);"></div></div>' +
-'<div class="a-line" id="F2385967TAncha" style="transform: translate(-50%, -50%) rotate(-291.609deg); height: 579.745px;"><div class="the-visible-line" style="height: 17.228px; transform: rotate(127.67deg);"></div></div>' +
-'<div class="a-line" id="FSadalmelikTSadachbia" style="transform: translate(-50%, -50%) rotate(-291.446deg); height: 648.044px;"><div class="the-visible-line" style="height: 24.0077px; transform: rotate(65.0935deg);"></div></div>' +
-'<div class="a-line" id="FSadachbiaT2423886" style="transform: translate(-50%, -50%) rotate(-295.414deg); height: 629.336px;"><div class="the-visible-line" style="height: 9.8662px; transform: rotate(91.4626deg);"></div></div>' +
-'<div class="a-line" id="F2418141T2423886" style="transform: translate(-50%, -50%) rotate(-296.319deg); height: 640.114px;"><div class="the-visible-line" style="height: 7.00963px; transform: rotate(44.1988deg);"></div></div>' +
-'<div class="a-line" id="F2423886T2434398" style="transform: translate(-50%, -50%) rotate(-297.208deg); height: 630.141px;"><div class="the-visible-line" style="height: 9.40944px; transform: rotate(70.7548deg);"></div></div>' +
-'<div class="a-line" id="F2434398T2461296" style="transform: translate(-50%, -50%) rotate(-298.839deg); height: 624.19px;"><div class="the-visible-line" style="height: 34.2355px; transform: rotate(38.9858deg);"></div></div>' +
-'<div class="a-line" id="F2456709T2461296" style="transform: translate(-50%, -50%) rotate(-302.398deg); height: 545.006px;"><div class="the-visible-line" style="height: 14.2773px; transform: rotate(164.664deg);"></div></div>' +
-'<div class="a-line" id="F2461296T2494515" style="transform: translate(-50%, -50%) rotate(-303.154deg); height: 572.59px;"><div class="the-visible-line" style="height: 31.2756px; transform: rotate(62.3242deg);"></div></div>' +
-'<div class="a-line" id="F2456709TSkat" style="transform: translate(-50%, -50%) rotate(-302.398deg); height: 545.006px;"><div class="the-visible-line" style="height: 9.67399px; transform: rotate(37.1742deg);"></div></div>' +
-'<div class="a-line" id="FSkatT2485733" style="transform: translate(-50%, -50%) rotate(-303.663deg); height: 529.718px;"><div class="the-visible-line" style="height: 25.3993px; transform: rotate(38.5813deg);"></div></div>' +
-'<div class="a-line" id="F2485733T2503767" style="transform: translate(-50%, -50%) rotate(-307.362deg); height: 491.026px;"><div class="the-visible-line" style="height: 14.644px; transform: rotate(78.0125deg);"></div></div>' +
-'<div class="a-line" id="F2503767T2528990" style="transform: translate(-50%, -50%) rotate(-310.743deg); height: 485.788px;"><div class="the-visible-line" style="height: 22.1707px; transform: rotate(104.496deg);"></div></div>' +
-'<div class="a-line" id="F2497203T2528990" style="transform: translate(-50%, -50%) rotate(-309.476deg); height: 544.31px;"><div class="the-visible-line" style="height: 36.2503px; transform: rotate(48.0302deg);"></div></div>' +
-'<div class="a-line" id="F2494515T2497203" style="transform: translate(-50%, -50%) rotate(-308.973deg); height: 546.359px;"><div class="the-visible-line" style="height: 2.60393px; transform: rotate(66.5673deg);"></div></div>' +
-'<div class="a-line" id="F2492335T2494515" style="transform: translate(-50%, -50%) rotate(-308.581deg); height: 562.785px;"><div class="the-visible-line" style="height: 8.42899px; transform: rotate(12.8191deg);"></div></div>' +
-'<div class="a-line" id="F93797TAlpherg" style="transform: translate(-50%, -50%) rotate(21.5627deg); height: 662.867px;"><div class="the-visible-line" style="height: 37.359px; transform: rotate(38.8651deg);"></div></div>' +
-'<div class="a-line" id="F93797T100641" style="transform: translate(-50%, -50%) rotate(21.5627deg); height: 662.867px;"><div class="the-visible-line" style="height: 9.72208px; transform: rotate(120.319deg);"></div></div>' +
-'<div class="a-line" id="F91300T100641" style="transform: translate(-50%, -50%) rotate(22.0849deg); height: 691.656px;"><div class="the-visible-line" style="height: 14.9322px; transform: rotate(50.1094deg);"></div></div>' +
-'<div class="a-line" id="FAlphergTTorcular" style="transform: translate(-50%, -50%) rotate(17.1291deg); height: 606.512px;"><div class="the-visible-line" style="height: 26.1313px; transform: rotate(41.2654deg);"></div></div>' +
-'<div class="a-line" id="FTorcularT153727" style="transform: translate(-50%, -50%) rotate(13.6515deg); height: 568.275px;"><div class="the-visible-line" style="height: 27.1303px; transform: rotate(44.4761deg);"></div></div>' +
-'<div class="a-line" id="F127385T153727" style="transform: translate(-50%, -50%) rotate(14.6421deg); height: 551.941px;"><div class="the-visible-line" style="height: 25.993px; transform: rotate(62.2295deg);"></div></div>' +
-'<div class="a-line" id="F80681T127385" style="transform: translate(-50%, -50%) rotate(24.2641deg); height: 586.055px;"><div class="the-visible-line" style="height: 50.6575px; transform: rotate(65.5854deg);"></div></div>' +
-'<div class="a-line" id="F62727T80681" style="transform: translate(-50%, -50%) rotate(27.8294deg); height: 593.826px;"><div class="the-visible-line" style="height: 18.7585px; transform: rotate(76.2625deg);"></div></div>' +
-'<div class="a-line" id="F2525456T2551223" style="transform: translate(-50%, -50%) rotate(-314.988deg); height: 601.63px;"><div class="the-visible-line" style="height: 25.5271px; transform: rotate(79.0408deg);"></div></div>' +
-'<div class="a-line" id="F2525456T2528171" style="transform: translate(-50%, -50%) rotate(-314.988deg); height: 601.63px;"><div class="the-visible-line" style="height: 10.7274px; transform: rotate(14.3361deg);"></div></div>' +
-'<div class="a-line" id="F2551223T62727" style="transform: translate(-50%, -50%) rotate(-319.828deg); height: 594.044px;"><div class="the-visible-line" style="height: 63.8492px; transform: rotate(83.7339deg);"></div></div>' +
-'<div class="a-line" id="F2496250T2510181" style="transform: translate(-50%, -50%) rotate(-309.291deg); height: 607.211px;"><div class="the-visible-line" style="height: 14.8303px; transform: rotate(102.595deg);"></div></div>' +
-'<div class="a-line" id="F2510181T2525456" style="transform: translate(-50%, -50%) rotate(-311.992deg); height: 614.358px;"><div class="the-visible-line" style="height: 17.1175px; transform: rotate(66.6898deg);"></div></div>' +
-'<div class="a-line" id="F2508805T2528171" style="transform: translate(-50%, -50%) rotate(-311.733deg); height: 589.53px;"><div class="the-visible-line" style="height: 19.7724px; transform: rotate(75.4642deg);"></div></div>' +
-'<div class="a-line" id="F2496250T2508805" style="transform: translate(-50%, -50%) rotate(-309.291deg); height: 607.211px;"><div class="the-visible-line" style="height: 15.5115px; transform: rotate(54.056deg);"></div></div>' +
-'<div class="a-line" id="FFumalsamakahT2496250" style="transform: translate(-50%, -50%) rotate(-305.969deg); height: 620.443px;"><div class="the-visible-line" style="height: 18.9832px; transform: rotate(67.9423deg);"></div></div>' +
-'</div>' +				
-				'<a-star ' +
-					'v-for="(star, i) in $root.theStarsFiltered" ' +
-					':key="star.id" ' +
-					':id="star.id" ' +
-					':star="star" ' +
-					'>' +
-				'</a-star>' +
-				'<div class="shader-container sunrise" ' +
-					//'v-if="false" ' +
-					':style="{ ' +				
-						'transform: \'' +
-							'translate(0%, -50%) ' +
-							'rotate(\' + ($root.sunAngle - (360 * $root.dayPercent())) + \'deg)' +
-						'\', ' +
-						'borderLeft: $root.showAngles ? \'1px solid #666\' : null, ' +
-					'} "' +
-					'>' +
-					'<div class="shader-caption" v-if="$root.showAngles" style="left: 0; top: 0px;"><div style="' +
-						'position: absolute; right: 0px; top: 44.6%;' +
-						'transform: rotate(90deg); transform-origin: top right; ' +
-						'">Midheaven</div></div>' +
-					'<div class="shader-caption" v-if="$root.showAngles" style="left: 0; top: 0px;"><div style="' +
-						'position: absolute; right: 0px; top: 56.4%;' +
-						'transform: rotate(90deg); transform-origin: top right; ' +
-						'">Imum&nbsp;Coeli</div></div>' +
-					'<div class="visible-ecliptic-shader" v-if="$root.showShader" ' +
-						':style="{ ' +				
-							'transform: \'' +
-								'translate(-50%, -50%) ' +
-								'rotate(\' + (-$root.shaderSeasonRotation()) + \'deg)' +
-							'\', ' +
-							'borderBottom: $root.showAngles ? \'1px solid #666\' : null, ' +
-						'} "' +
-						'>' +
-						'<div class="shader-caption" v-if="$root.showAngles">Ascending / Rising</div>' +
-					'</div>' +
-				'</div>' +
-				'<div class="shader-container sunrise" ' +
-					//'v-if="false" ' +
-					':style="{ ' +				
-						'transform: \'' +
-							'translate(0%, -50%) ' +
-							'rotate(\' + ($root.sunAngle - (360 * $root.dayPercent())) + \'deg) ' +
-							'scaleX(-1) ' +
-						'\', ' +
-					'} "' +
-					'>' +
-					'<div class="visible-ecliptic-shader" v-if="$root.showShader" ' +
-						':style="{ ' +				
-							'transform: \'' +
-								'translate(-50%, -50%) ' +
-								'rotate(\' + (-$root.shaderSeasonRotation()) + \'deg)' +
-							'\', ' +
-							'borderBottom: $root.showAngles ? \'1px solid #666\' : null, ' +
-						'} "' +
-						'>' +
-						'<div class="shader-caption" v-if="$root.showAngles"><div style="transform: scaleX(-1)">Descending</div></div>' +
-					'</div>' +
-				'</div>' +
-			'</div>' +
+		'<div class="the-sky">' +
 			'<div class="control-box">' +
 				'<div>' +
 					'<table class="date-shown">' +
@@ -568,14 +224,15 @@ Vue.component('sky-viewer', {
 					'</table>' +
 				'</div>' +
 				'<div class="date-controls">' +
-					'<div class="control-button" @click.stop="$root.dateTime = new Date().getTime()">Now</div>' +
-					'<div class="control-button" @click.stop="$root.dateTime = 304017323563">BD</div>' +
-					'<div class="control-button" @click.stop="$root.sessionStorage.setItem(\'savedTime\', $root.dateTime); $root.savedDateTime = $root.dateTime;">Save</div>' +
-					'<div class="control-button" @click.stop="$root.dateTime = $root.sessionStorage.getItem(\'savedTime\') ? parseInt($root.sessionStorage.getItem(\'savedTime\')) : 0;">Load</div>' +
-					'<div class="control-button" @click.stop="$root.runClock" v-if="$root.clockID == -1">GO</div>' +
-					'<div class="control-button on" @click.stop="$root.stopClock" v-if="$root.clockID != -1">GO</div>' +
-					'<div class="control-button" @click.stop="$root.stepIncrement /= 10">-</div>' +
-					'<div class="control-button" @click.stop="$root.stepIncrement *= 10">+</div>' +
+					'<div class="control-button" style="float: left; clear: left;" @click.stop="$root.dateTime = new Date().getTime()">Now</div>' +
+					'<div class="control-button" style="float: left;" @click.stop="$root.dateTime = 304017323563">BD</div>' +
+					'<div class="control-button" style="float: left;" @click.stop="$root.saveDateTime">Save</div>' +
+					//'<div class="control-button" style="float: left;" @click.stop="$root.dateTime = $root.sessionStorage.getItem(\'savedTime\') ? parseInt($root.sessionStorage.getItem(\'savedTime\')) : 0;">Load</div>' +
+					'<div class="control-button" style="float: left; clear: left;" @click.stop="$root.runClock" v-if="$root.clockID == -1">GO</div>' +
+					'<div class="control-button on" style="float: left; clear: left;" @click.stop="$root.stopClock" v-if="$root.clockID != -1">GO</div>' +
+					'<div class="control-button" style="float: left;" @click.stop="$root.stepIncrement /= 10">-</div>' +
+					'<div class="control-button" style="float: left;" @click.stop="$root.stepIncrement *= 10">+</div>' +
+					'<div class="control-text">Speed: {{ $root.stepIncrement / 100000 }}</div>' +
 					/*'<div class="control-button" @click.stop="$root.dateTime = 1718973664715">Longest SR</div>' +
 					'<div class="control-button" @click.stop="$root.dateTime = 1718996414715">Longest Noon</div>' +
 					'<div class="control-button" @click.stop="$root.dateTime = 1719000014715">Longest 1:00</div>' +
@@ -585,14 +242,360 @@ Vue.component('sky-viewer', {
 					'<div class="control-button" @click.stop="$root.dateTime = 1734811224715">Shortest Noon</div>' +
 					'<div class="control-button" @click.stop="$root.dateTime = 1734828424715">Shortest SS</div>' +
 					'<br>' +*/
-					'<div class="control-button" :class="{ on: $root.useSymbols, }" @click.stop="$root.useSymbols = !$root.useSymbols">Symbols</div>' +
-					'<div class="control-button" :class="{ on: $root.showShader, }" @click.stop="$root.showShader = !$root.showShader">Shader</div>' +
-					'<div class="control-button" :class="{ on: $root.visibleSkyUp, }" @click.stop="$root.visibleSkyUp = !$root.visibleSkyUp">Sky Up</div>' +
-					'<div class="control-button" :class="{ on: $root.showLasers, }" @click.stop="$root.showLasers = !$root.showLasers">Lasers</div>' +
-					'<div class="control-button" :class="{ on: $root.showLines, }" @click.stop="$root.showLines = !$root.showLines">Lines</div>' +
-					'<div class="control-button" :class="{ on: $root.showAspects, }" @click.stop="$root.showAspects = !$root.showAspects">Aspects</div>' +
-					'<div class="control-button" :class="{ on: $root.showDivisions, }" @click.stop="$root.showDivisions = !$root.showDivisions">Divisions</div>' +
-					'<div class="control-button" :class="{ on: $root.showAngles, }" @click.stop="$root.showAngles = !$root.showAngles">Angles</div>' +
+					'<div class="control-button" style="clear: left; float: left;" :class="{ on: $root.useSymbols, }" @click.stop="$root.useSymbols = !$root.useSymbols">Symbols</div>' +
+					'<div class="control-button" style="float: left;" :class="{ on: $root.showShader, }" @click.stop="$root.showShader = !$root.showShader">Shader</div>' +
+					'<div class="control-button" style="float: left;" :class="{ on: $root.visibleSkyUp, }" @click.stop="$root.visibleSkyUp = !$root.visibleSkyUp">Sky Up</div>' +
+					'<div class="control-button" style="clear: left; float: left;" :class="{ on: $root.showLasers, }" @click.stop="$root.showLasers = !$root.showLasers">Lasers</div>' +
+					'<div class="control-button" style="float: left;" :class="{ on: $root.showLines, }" @click.stop="$root.showLines = !$root.showLines">Lines</div>' +
+					'<div class="control-button" style="float: left;" :class="{ on: $root.showAspects, }" @click.stop="$root.showAspects = !$root.showAspects">Aspects</div>' +
+					'<div class="control-button" style="clear: left; float: left;" :class="{ on: $root.showDivisions, }" @click.stop="$root.showDivisions = !$root.showDivisions">Divisions</div>' +
+					'<div class="control-button" style="float: left;" :class="{ on: $root.showAngles, }" @click.stop="$root.showAngles = !$root.showAngles">Angles</div>' +
+				'</div>' +
+			'</div>' +
+			'<div id="sky-viewer" class="sky-viewer" ' +
+				'>' +
+				'<div class="the-center" id="the-center" ' +
+					':style="{ ' +				
+						'transform: ' +
+							'$root.visibleSkyUp ? (\'rotate(\' + $root.theCenterRotation + \'deg)\') : null' +
+						', ' +
+					'} "' +
+					'>' +
+					'<div class="the-earth"></div>' +
+					'<div class="the-constellations-circle">' +
+					'</div>' +
+					'<div class="constellation-divider"' + 
+						'v-if="$root.showDivisions" ' +
+						'v-for="(constellation, i) in $root.theZodiac" ' +
+						':style="{ transform: \'translate(-50%, -50%) rotate(\' + (i * (-360 / 12) + 360 / 24) + \'deg)\', }" ' +
+					'></div>' +
+					'<div ' +
+						'v-for="(constellation, i) in $root.theZodiac" ' +
+						'class="a-constellation" ' +
+						':style="{ transform: \'translate(-50%, -50%) rotate(\' + (i * (-360 / 12)) + \'deg)\', }" ' +
+						'>' +
+						'<div class="constellation-name" v-if="!$root.useSymbols">{{ constellation.name }}</div>' +
+						'<div class="constellation-symbol" v-if="$root.useSymbols">{{ constellation.symbol }}</div>' +
+					'</div>' +
+					'<div class="planet-circle major" ' +
+						'v-for="(planet, i) in $root.thePlanets" ' +
+						':style="{ ' +
+							'height: (100 + 32 * planet.order) + \'px\', ' +
+							'width: (100 + 32 * planet.order) + \'px\', ' +
+							'}" ' +
+						'>' +
+					'</div>' +
+					'<a-planet ' +
+						'v-for="(planet, i) in $root.thePlanets" ' +
+						':key="planet.order" ' +
+						':planet="planet" ' +
+						'>' +
+					'</a-planet>' +
+					'<a-planet ' +
+						':planet="{ name: \'NN\', symbol: String.fromCodePoint(0x260A), color: \'black\', order: 4, size: 5, }" ' +
+						'>' +
+					'</a-planet>' +
+					'<a-planet ' +
+						':planet="{ name: \'SN\', symbol: String.fromCodePoint(0x260B), color: \'black\', order: 4, size: 5, }" ' +
+						'>' +
+					'</a-planet>' +
+					'<div v-if="$root.showLasers" class="planet-laser" ' +
+						'v-for="(planet, i) in $root.thePlanets" ' +
+						':key="planet.order" ' +
+						':style="{ transform: \'rotate(\' + (180 + $root.planetAngle(planet.name)) + \'deg)\', }" ' +
+						'>' +
+					'</div>' +
+					/*'<div class="planet-circle minor" ' +
+						'v-for="(planet, i) in $root.theMinorPlanets" ' +
+						':style="{ ' +
+							'height: (80 + 100 + 32 * planet.order) + \'px\', ' +
+							'width: (80 + 100 + 32 * planet.order) + \'px\', ' +
+							'}" ' +
+						'>' +
+						'>' +
+					'</div>' +
+					'<a-planet ' +
+						'v-for="(planet, i) in $root.theMinorPlanets" ' +
+						':key="planet.order" ' +
+						':planet="planet" ' +
+						':type="\'minor\'" ' +
+						'>' +
+					'</a-planet>' +*/
+					'<div v-for="(p1, p1name) in $root.aspects" :key="p1name" :id="p1name + \'-aspects\'">' +
+						'<div v-for="(p2, p2name) in p1" :key="p1name + \'-\' + p2name" :id="p1name + \'-\' + p2name + \'-aspect\'">' +
+							'<div ' +
+								'v-if="$root.showAspects" ' +
+								'class="planet-laser" ' +
+								':class="[ p2.aspect ]" ' +
+								':style="{ ' +
+									'transform: \'rotate(\' + (180 + $root.planetAngle(p1name)) + \'deg)\', ' +
+									'height: ((100 + 32 * $root.thePlanets.filter(function(planet) { return planet.name == p1name })[0].order) / 2) + \'px\', ' +
+								'}" ' +
+								'>' +
+							'</div>' +
+							'<div ' +
+								'v-if="$root.showAspects && p2.aspect != \'Conjunct\' && p2.aspect != \'Opposition\'" ' +
+								'class="planet-laser" ' +
+								':style="{ ' +
+									'transform: \'rotate(\' + (180 + $root.planetAngle(p1name)) + \'deg)\', ' +
+									'height: (20) + \'px\', ' +
+									'borderLeft: \'unset\', ' +
+								'}" ' +
+								'>' +
+								'<div ' +
+									'v-if="(p2.p1angle - p2.p2angle < 180 && p2.p1angle - p2.p2angle) > 0 || p2.p1angle - p2.p2angle < -180" ' +
+									'class="planet-laser" ' +
+									':class="[ p2.aspect ]" ' +
+									':style="{ ' +
+										'transform: ' +
+											'\'rotate(\' + (p2.aspect == \'Square\' ? 90 : ( p2.aspect == \'Trine\' ? (30) : 60)) + \'deg)\' ' +
+											//' + \'scaleY(\' + (p2.p1angle - p2.p2angle > 180 ? -1 : 1) + \')\'' +
+											', ' +
+										'transformOrigin: \'bottom left\', ' +
+										'height: 20 + \'px\', ' +
+									'}" ' +
+									'>' +
+									'<div ' +
+										'v-if="p2.aspect == \'Square\' || p2.aspect == \'Trine\'" ' +
+										'class="planet-laser" ' +
+										':class="[ p2.aspect ]" ' +
+										':style="{ ' +
+											'transform: \'rotate(\' + (p2.aspect == \'Square\' ? 90 : 180) + \'deg)\', ' +
+											'transformOrigin: \'top left\', ' +
+											'height: (p2.aspect == \'Square\' ? 20 : 15) + \'px\', ' +
+										'}" ' +
+										'>' +
+									'</div>' +
+								'</div>' +
+							'</div>' +
+						'</div>' +
+					'</div>' +
+					/*'<a-line ' +
+						'v-for="line in $root.theLines" ' +
+						':line="line" ' +
+						':key="\'F\' + line.fromID + \'T\' + line.toID" ' +
+						':id="\'F\' + line.fromID + \'T\' + line.toID" ' +
+						'>' +
+					'</a-line>' +*/
+	'<div v-show="$root.showLines">' +
+	'<div class="a-line" id="FHamalTBharani" style="transform: translate(-50%, -50%) rotate(8.20667deg); height: 629.58px;"><div class="the-visible-line" style="height: 58.8805px; transform: rotate(86.1505deg);"></div></div>' +
+	'<div class="a-line" id="FSheratanTHamal" style="transform: translate(-50%, -50%) rotate(11.34deg); height: 622.008px;"><div class="the-visible-line" style="height: 17.5228px; transform: rotate(100.911deg);"></div></div>' +
+	'<div class="a-line" id="FMesarthimTSheratan" style="transform: translate(-50%, -50%) rotate(11.6175deg); height: 614.966px;"><div class="the-visible-line" style="height: 3.82417px; transform: rotate(156.807deg);"></div></div>' +
+	'<div class="a-line" id="FChamukuyTAldebaran" style="transform: translate(-50%, -50%) rotate(-27.1656deg); height: 556.499px;"><div class="the-visible-line" style="height: 8.91677px; transform: rotate(97.0692deg);"></div></div>' +
+	'<div class="a-line" id="FPrima HyadumTChamukuy" style="transform: translate(-50%, -50%) rotate(-24.9483deg); height: 556.262px;"><div class="the-visible-line" style="height: 10.7652px; transform: rotate(89.5233deg);"></div></div>' +
+	'<div class="a-line" id="FPrima HyadumTSecunda Hyadum" style="transform: translate(-50%, -50%) rotate(-24.9483deg); height: 556.262px;"><div class="the-visible-line" style="height: 6.00415px; transform: rotate(139.8deg);"></div></div>' +
+	'<div class="a-line" id="F292140TPrima Hyadum" style="transform: translate(-50%, -50%) rotate(-20.1701deg); height: 543.092px;"><div class="the-visible-line" style="height: 23.8385px; transform: rotate(103.623deg);"></div></div>' +
+	'<div class="a-line" id="FSecunda HyadumTAin" style="transform: translate(-50%, -50%) rotate(-25.7337deg); height: 565.477px;"><div class="the-visible-line" style="height: 8.00834px; transform: rotate(117.513deg);"></div></div>' +
+	'<div class="a-line" id="F341266TElnath" style="transform: translate(-50%, -50%) rotate(-30.5613deg); height: 590.626px;"><div class="the-visible-line" style="height: 59.2304px; transform: rotate(96.7497deg);"></div></div>' +
+	'<div class="a-line" id="FAinT341266" style="transform: translate(-50%, -50%) rotate(-27.1542deg); height: 573.051px;"><div class="the-visible-line" style="height: 19.3994px; transform: rotate(115.219deg);"></div></div>' +
+	'<div class="a-line" id="FAldebaranTTianguan" style="transform: translate(-50%, -50%) rotate(-28.98deg); height: 558.969px;"><div class="the-visible-line" style="height: 76.9043px; transform: rotate(89.3343deg);"></div></div>' +
+	'<div class="a-line" id="F254098T292140" style="transform: translate(-50%, -50%) rotate(-11.7923deg); height: 535.336px;"><div class="the-visible-line" style="height: 39.5759px; transform: rotate(91.4241deg);"></div></div>' +
+	'<div class="a-line" id="F251435T254098" style="transform: translate(-50%, -50%) rotate(-11.2033deg); height: 532.331px;"><div class="the-visible-line" style="height: 3.12696px; transform: rotate(118.371deg);"></div></div>' +
+	'<div class="a-line" id="FMekbudaTWasat" style="transform: translate(-50%, -50%) rotate(-66.0272deg); height: 572.267px;"><div class="the-visible-line" style="height: 20.3856px; transform: rotate(97.4864deg);"></div></div>' +
+	'<div class="a-line" id="FAlhenaTMekbuda" style="transform: translate(-50%, -50%) rotate(-59.4279deg); height: 552.113px;"><div class="the-visible-line" style="height: 33.8855px; transform: rotate(103.968deg);"></div></div>' +
+	'<div class="a-line" id="F685540TWasat" style="transform: translate(-50%, -50%) rotate(-69.5232deg); height: 551.822px;"><div class="the-visible-line" style="height: 13.8162px; transform: rotate(169.304deg);"></div></div>' +
+	'<div class="a-line" id="FAlzirrT685540" style="transform: translate(-50%, -50%) rotate(-61.3224deg); height: 534.377px;"><div class="the-visible-line" style="height: 39.7959px; transform: rotate(98.5221deg);"></div></div>' +
+	'<div class="a-line" id="FWasatT739235" style="transform: translate(-50%, -50%) rotate(-70.0307deg); height: 578.994px;"><div class="the-visible-line" style="height: 23.7265px; transform: rotate(118.86deg);"></div></div>' +
+	'<div class="a-line" id="F739235TPollux" style="transform: translate(-50%, -50%) rotate(-73.9806deg); height: 603.328px;"><div class="the-visible-line" style="height: 12.738px; transform: rotate(101.463deg);"></div></div>' +
+	'<div class="a-line" id="F708959TCastor" style="transform: translate(-50%, -50%) rotate(-71.4316deg); height: 607.978px;"><div class="the-visible-line" style="height: 15.6976px; transform: rotate(129.227deg);"></div></div>' +
+	'<div class="a-line" id="F739235T764688" style="transform: translate(-50%, -50%) rotate(-73.9806deg); height: 603.328px;"><div class="the-visible-line" style="height: 12.7566px; transform: rotate(59.4418deg);"></div></div>' +
+	'<div class="a-line" id="F708959T739235" style="transform: translate(-50%, -50%) rotate(-71.4316deg); height: 607.978px;"><div class="the-visible-line" style="height: 13.67px; transform: rotate(78.9355deg);"></div></div>' +
+	'<div class="a-line" id="F663843T708959" style="transform: translate(-50%, -50%) rotate(-67.7849deg); height: 620.485px;"><div class="the-visible-line" style="height: 20.5179px; transform: rotate(70.4511deg);"></div></div>' +
+	'<div class="a-line" id="FMebsutaT708959" style="transform: translate(-50%, -50%) rotate(-60.983deg); height: 595.593px;"><div class="the-visible-line" style="height: 55.1414px; transform: rotate(91.1981deg);"></div></div>' +
+	'<div class="a-line" id="F543342TMebsuta" style="transform: translate(-50%, -50%) rotate(-57.2408deg); height: 571.441px;"><div class="the-visible-line" style="height: 22.5532px; transform: rotate(120.481deg);"></div></div>' +
+	'<div class="a-line" id="FTejatTMebsuta" style="transform: translate(-50%, -50%) rotate(-55.7401deg); height: 583.139px;"><div class="the-visible-line" style="height: 27.6638px; transform: rotate(100.369deg);"></div></div>' +
+	'<div class="a-line" id="FPropusTTejat" style="transform: translate(-50%, -50%) rotate(-53.7194deg); height: 583.373px;"><div class="the-visible-line" style="height: 10.285px; transform: rotate(88.3631deg);"></div></div>' +
+	'<div class="a-line" id="F483362TPropus" style="transform: translate(-50%, -50%) rotate(-51.0301deg); height: 587.536px;"><div class="the-visible-line" style="height: 13.8952px; transform: rotate(80.0434deg);"></div></div>' +
+	'<div class="a-line" id="FAsellus AustralisTAcubens" style="transform: translate(-50%, -50%) rotate(-91.1713deg); height: 560.747px;"><div class="the-visible-line" style="height: 22.4314px; transform: rotate(45.3361deg);"></div></div>' +
+	'<div class="a-line" id="FAsellus BorealisTAsellus Australis" style="transform: translate(-50%, -50%) rotate(-90.8214deg); height: 577.242px;"><div class="the-visible-line" style="height: 8.43081px; transform: rotate(11.7146deg);"></div></div>' +
+	'<div class="a-line" id="FAsellus BorealisT917770" style="transform: translate(-50%, -50%) rotate(-90.8214deg); height: 577.242px;"><div class="the-visible-line" style="height: 18.8468px; transform: rotate(165.972deg);"></div></div>' +
+	'<div class="a-line" id="FTarfTAsellus Australis" style="transform: translate(-50%, -50%) rotate(-84.1288deg); height: 514.885px;"><div class="the-visible-line" style="height: 40.1859px; transform: rotate(121.198deg);"></div></div>' +
+	'<div class="a-line" id="FAlgiebaTZosma" style="transform: translate(-50%, -50%) rotate(-114.992deg); height: 583.414px;"><div class="the-visible-line" style="height: 70.9573px; transform: rotate(92.286deg);"></div></div>' +
+	'<div class="a-line" id="FZosmaTDenebola" style="transform: translate(-50%, -50%) rotate(-128.527deg); height: 605.905px;"><div class="the-visible-line" style="height: 46.104px; transform: rotate(77.9871deg);"></div></div>' +
+	'<div class="a-line" id="FChertanTDenebola" style="transform: translate(-50%, -50%) rotate(-128.56deg); height: 580.492px;"><div class="the-visible-line" style="height: 45.035px; transform: rotate(93.9936deg);"></div></div>' +
+	'<div class="a-line" id="FRegulusTChertan" style="transform: translate(-50%, -50%) rotate(-112.094deg); height: 541.128px;"><div class="the-visible-line" style="height: 82.6375px; transform: rotate(95.4002deg);"></div></div>' +
+	'<div class="a-line" id="FRegulusT1061687" style="transform: translate(-50%, -50%) rotate(-112.094deg); height: 541.128px;"><div class="the-visible-line" style="height: 11.9289px; transform: rotate(186.822deg);"></div></div>' +
+	'<div class="a-line" id="F1061687TAlgieba" style="transform: translate(-50%, -50%) rotate(-111.833deg); height: 564.862px;"><div class="the-visible-line" style="height: 18.3453px; transform: rotate(118.8deg);"></div></div>' +
+	'<div class="a-line" id="FAdhaferaTAlgieba" style="transform: translate(-50%, -50%) rotate(-114.173deg); height: 600.428px;"><div class="the-visible-line" style="height: 9.50178px; transform: rotate(26.0552deg);"></div></div>' +
+	'<div class="a-line" id="FRasalasTAdhafera" style="transform: translate(-50%, -50%) rotate(-108.191deg); height: 607.995px;"><div class="the-visible-line" style="height: 31.7505px; transform: rotate(80.1788deg);"></div></div>' +
+	'<div class="a-line" id="FRas Elased AustralisTRasalas" style="transform: translate(-50%, -50%) rotate(-106.463deg); height: 595.561px;"><div class="the-visible-line" style="height: 11.0006px; transform: rotate(123.555deg);"></div></div>' +
+	'<div class="a-line" id="F1460530T1483603" style="transform: translate(-50%, -50%) rotate(-181.562deg); height: 667.109px;"><div class="the-visible-line" style="height: 25.6556px; transform: rotate(105.138deg);"></div></div>' +
+	'<div class="a-line" id="FHezeT1397226" style="transform: translate(-50%, -50%) rotate(-163.673deg); height: 592.981px;"><div class="the-visible-line" style="height: 40.2312px; transform: rotate(112.628deg);"></div></div>' +
+	'<div class="a-line" id="F1397226T1460530" style="transform: translate(-50%, -50%) rotate(-170.412deg); height: 626.621px;"><div class="the-visible-line" style="height: 65.9951px; transform: rotate(102.201deg);"></div></div>' +
+	'<div class="a-line" id="FKangT1456034" style="transform: translate(-50%, -50%) rotate(-173.224deg); height: 577.287px;"><div class="the-visible-line" style="height: 46.6104px; transform: rotate(118.098deg);"></div></div>' +
+	'<div class="a-line" id="FSpicaTKang" style="transform: translate(-50%, -50%) rotate(-161.298deg); height: 532.3px;"><div class="the-visible-line" style="height: 60.8917px; transform: rotate(104.765deg);"></div></div>' +
+	'<div class="a-line" id="FSpicaTHeze" style="transform: translate(-50%, -50%) rotate(-161.298deg); height: 532.3px;"><div class="the-visible-line" style="height: 32.495px; transform: rotate(157.785deg);"></div></div>' +
+	'<div class="a-line" id="F1325111TSpica" style="transform: translate(-50%, -50%) rotate(-157.487deg); height: 548.153px;"><div class="the-visible-line" style="height: 19.6314px; transform: rotate(64.2994deg);"></div></div>' +
+	'<div class="a-line" id="FPorrimaT1325111" style="transform: translate(-50%, -50%) rotate(-150.415deg); height: 547.229px;"><div class="the-visible-line" style="height: 33.7836px; transform: rotate(87.2467deg);"></div></div>' +
+	'<div class="a-line" id="FMinelauvaTHeze" style="transform: translate(-50%, -50%) rotate(-153.901deg); height: 581.751px;"><div class="the-visible-line" style="height: 50.3415px; transform: rotate(91.4916deg);"></div></div>' +
+	'<div class="a-line" id="FMinelauvaTVindemiatrix" style="transform: translate(-50%, -50%) rotate(-153.901deg); height: 581.751px;"><div class="the-visible-line" style="height: 23.0914px; transform: rotate(157.181deg);"></div></div>' +
+	'<div class="a-line" id="FPorrimaTMinelauva" style="transform: translate(-50%, -50%) rotate(-150.415deg); height: 547.229px;"><div class="the-visible-line" style="height: 24.3406px; transform: rotate(133.401deg);"></div></div>' +
+	'<div class="a-line" id="FZaniahTPorrima" style="transform: translate(-50%, -50%) rotate(-144.976deg); height: 536.161px;"><div class="the-visible-line" style="height: 26.2882px; transform: rotate(99.427deg);"></div></div>' +
+	'<div class="a-line" id="FZavijavaTZaniah" style="transform: translate(-50%, -50%) rotate(-137.674deg); height: 530.483px;"><div class="the-visible-line" style="height: 34.0816px; transform: rotate(91.1147deg);"></div></div>' +
+	'<div class="a-line" id="FZubenelgenubiTZubeneschamali" style="transform: translate(-50%, -50%) rotate(-182.72deg); height: 581.416px;"><div class="the-visible-line" style="height: 44.3243px; transform: rotate(125.214deg);"></div></div>' +
+	'<div class="a-line" id="FZubenelgenubiTBrachium" style="transform: translate(-50%, -50%) rotate(-182.72deg); height: 581.416px;"><div class="the-visible-line" style="height: 23.8558px; transform: rotate(41.212deg);"></div></div>' +
+	'<div class="a-line" id="FBrachiumTZubeneschamali" style="transform: translate(-50%, -50%) rotate(-186.018deg); height: 546.429px;"><div class="the-visible-line" style="height: 48.091px; transform: rotate(158.072deg);"></div></div>' +
+	'<div class="a-line" id="FZubeneschamaliTZubenelhakrabi" style="transform: translate(-50%, -50%) rotate(-189.252deg); height: 636.673px;"><div class="the-visible-line" style="height: 26.1912px; transform: rotate(74.2002deg);"></div></div>' +
+	'<div class="a-line" id="FZubenelhakrabiT1561678" style="transform: translate(-50%, -50%) rotate(-193.882deg); height: 624.446px;"><div class="the-visible-line" style="height: 25.0861px; transform: rotate(92.3532deg);"></div></div>' +
+	'<div class="a-line" id="FBrachiumT1534623" style="transform: translate(-50%, -50%) rotate(-186.018deg); height: 546.429px;"><div class="the-visible-line" style="height: 40.1808px; transform: rotate(94.77deg);"></div></div>' +
+	'<div class="a-line" id="FDschubbaTAcrab" style="transform: translate(-50%, -50%) rotate(-200.083deg); height: 603.691px;"><div class="the-visible-line" style="height: 11.1428px; transform: rotate(141.625deg);"></div></div>' +
+	'<div class="a-line" id="FAcrabTJabbah" style="transform: translate(-50%, -50%) rotate(-201.359deg); height: 621.315px;"><div class="the-visible-line" style="height: 9.44571px; transform: rotate(108.137deg);"></div></div>' +
+	'<div class="a-line" id="FDschubbaTFang" style="transform: translate(-50%, -50%) rotate(-200.083deg); height: 603.691px;"><div class="the-visible-line" style="height: 9.45351px; transform: rotate(-5.5411deg);"></div></div>' +
+	'<div class="a-line" id="FFangTIklil" style="transform: translate(-50%, -50%) rotate(-199.713deg); height: 585.184px;"><div class="the-visible-line" style="height: 8.805px; transform: rotate(-8.0815deg);"></div></div>' +
+	'<div class="a-line" id="FDschubbaTAlniyat" style="transform: translate(-50%, -50%) rotate(-200.083deg); height: 603.691px;"><div class="the-visible-line" style="height: 27.4396px; transform: rotate(86.3631deg);"></div></div>' +
+	'<div class="a-line" id="FAlniyatTAntares" style="transform: translate(-50%, -50%) rotate(-205.297deg); height: 602.705px;"><div class="the-visible-line" style="height: 10.8214px; transform: rotate(91.0906deg);"></div></div>' +
+	'<div class="a-line" id="FAntaresTPaikauhale" style="transform: translate(-50%, -50%) rotate(-207.352deg); height: 603.506px;"><div class="the-visible-line" style="height: 8.87534px; transform: rotate(72.2002deg);"></div></div>' +
+	'<div class="a-line" id="FPaikauhaleTLarawag" style="transform: translate(-50%, -50%) rotate(-208.971deg); height: 598.319px;"><div class="the-visible-line" style="height: 21.5493px; transform: rotate(56.2539deg);"></div></div>' +
+	'<div class="a-line" id="FLarawagTXamidimura" style="transform: translate(-50%, -50%) rotate(-212.541deg); height: 575.495px;"><div class="the-visible-line" style="height: 9.20743px; transform: rotate(13.0331deg);"></div></div>' +
+	'<div class="a-line" id="FXamidimuraT1662549" style="transform: translate(-50%, -50%) rotate(-212.968deg); height: 557.563px;"><div class="the-visible-line" style="height: 10.6425px; transform: rotate(17.3853deg);"></div></div>' +
+	'<div class="a-line" id="F1662549T1694599" style="transform: translate(-50%, -50%) rotate(-213.646deg); height: 537.299px;"><div class="the-visible-line" style="height: 20.7116px; transform: rotate(92.1965deg);"></div></div>' +
+	'<div class="a-line" id="F1694599TSargas" style="transform: translate(-50%, -50%) rotate(-218.038deg); height: 540.467px;"><div class="the-visible-line" style="height: 30.2584px; transform: rotate(95.5613deg);"></div></div>' +
+	'<div class="a-line" id="FLesathTShaula" style="transform: translate(-50%, -50%) rotate(-222.691deg); height: 576.414px;"><div class="the-visible-line" style="height: 3.68671px; transform: rotate(103.274deg);"></div></div>' +
+	'<div class="a-line" id="FSargasT1765472" style="transform: translate(-50%, -50%) rotate(-224.33deg); height: 549.644px;"><div class="the-visible-line" style="height: 14.9958px; transform: rotate(122.285deg);"></div></div>' +
+	'<div class="a-line" id="F1754884T1765472" style="transform: translate(-50%, -50%) rotate(-225.622deg); height: 570.685px;"><div class="the-visible-line" style="height: 6.70078px; transform: rotate(69.9709deg);"></div></div>' +
+	'<div class="a-line" id="FShaulaT1754884" style="transform: translate(-50%, -50%) rotate(-223.402deg); height: 578.159px;"><div class="the-visible-line" style="height: 11.7372px; transform: rotate(70.3256deg);"></div></div>' +
+	'<div class="a-line" id="FYed PriorTYed Posterior" style="transform: translate(-50%, -50%) rotate(-203.586deg); height: 707.828px;"><div class="the-visible-line" style="height: 6.24898px; transform: rotate(78.257deg);"></div></div>' +
+	'<div class="a-line" id="FYed PosteriorT1633277" style="transform: translate(-50%, -50%) rotate(-204.58deg); height: 705.399px;"><div class="the-visible-line" style="height: 30.0059px; transform: rotate(70.0939deg);"></div></div>' +
+	'<div class="a-line" id="F1633277TSabik" style="transform: translate(-50%, -50%) rotate(-209.29deg); height: 687.277px;"><div class="the-visible-line" style="height: 49.6533px; transform: rotate(80.1196deg);"></div></div>' +
+	'<div class="a-line" id="FSabikTCebalrai" style="transform: translate(-50%, -50%) rotate(-217.595deg); height: 677.347px;"><div class="the-visible-line" style="height: 76.7515px; transform: rotate(132.309deg);"></div></div>' +
+	'<div class="a-line" id="FRasalhagueTCebalrai" style="transform: translate(-50%, -50%) rotate(-223.733deg); height: 826.83px;"><div class="the-visible-line" style="height: 24.2156px; transform: rotate(37.3552deg);"></div></div>' +
+	'<div class="a-line" id="F1668004TRasalhague" style="transform: translate(-50%, -50%) rotate(-214.417deg); height: 797.421px;"><div class="the-visible-line" style="height: 67.5616px; transform: rotate(97.872deg);"></div></div>' +
+	'<div class="a-line" id="FYed PriorT1668004" style="transform: translate(-50%, -50%) rotate(-203.586deg); height: 707.828px;"><div class="the-visible-line" style="height: 83.8666px; transform: rotate(116.707deg);"></div></div>' +
+	'<div class="a-line" id="FSabikT1712828" style="transform: translate(-50%, -50%) rotate(-217.595deg); height: 677.347px;"><div class="the-visible-line" style="height: 26.8542px; transform: rotate(36.8676deg);"></div></div>' +
+	'<div class="a-line" id="F1712828T1723545" style="transform: translate(-50%, -50%) rotate(-220.502deg); height: 635.199px;"><div class="the-visible-line" style="height: 13.4543px; transform: rotate(32.063deg);"></div></div>' +
+	'<div class="a-line" id="F1623087T1633277" style="transform: translate(-50%, -50%) rotate(-207.785deg); height: 653.619px;"><div class="the-visible-line" style="height: 18.9936px; transform: rotate(151.632deg);"></div></div>' +
+	'<div class="a-line" id="F1615993T1623087" style="transform: translate(-50%, -50%) rotate(-206.756deg); height: 641.965px;"><div class="the-visible-line" style="height: 8.23141px; transform: rotate(134.528deg);"></div></div>' +
+	'<div class="a-line" id="F1610915T1615993" style="transform: translate(-50%, -50%) rotate(-206.026deg); height: 632.287px;"><div class="the-visible-line" style="height: 6.32014px; transform: rotate(139.665deg);"></div></div>' +
+	'<div class="a-line" id="F1610915T1613517" style="transform: translate(-50%, -50%) rotate(-206.026deg); height: 632.287px;"><div class="the-visible-line" style="height: 8.31752px; transform: rotate(13.8637deg);"></div></div>' +
+	'<div class="a-line" id="FPolisTKaus Borealis" style="transform: translate(-50%, -50%) rotate(-233.441deg); height: 664.525px;"><div class="the-visible-line" style="height: 23.0224px; transform: rotate(59.839deg);"></div></div>' +
+	'<div class="a-line" id="FAlnaslTKaus Media" style="transform: translate(-50%, -50%) rotate(-231.452deg); height: 617.226px;"><div class="the-visible-line" style="height: 20.5807px; transform: rotate(93.0467deg);"></div></div>' +
+	'<div class="a-line" id="F1765413TAlnasl" style="transform: translate(-50%, -50%) rotate(-226.89deg); height: 627.712px;"><div class="the-visible-line" style="height: 25.3206px; transform: rotate(75.7909deg);"></div></div>' +
+	'<div class="a-line" id="FKaus MediaTKaus Borealis" style="transform: translate(-50%, -50%) rotate(-235.249deg); height: 620.787px;"><div class="the-visible-line" style="height: 14.5522px; transform: rotate(137.775deg);"></div></div>' +
+	'<div class="a-line" id="FKaus MediaTKaus Australis" style="transform: translate(-50%, -50%) rotate(-235.249deg); height: 620.787px;"><div class="the-visible-line" style="height: 12.1693px; transform: rotate(19.92deg);"></div></div>' +
+	'<div class="a-line" id="F1842810TKaus Australis" style="transform: translate(-50%, -50%) rotate(-234.407deg); height: 586.107px;"><div class="the-visible-line" style="height: 10.3228px; transform: rotate(124.205deg);"></div></div>' +
+	'<div class="a-line" id="FKaus BorealisT1914343" style="transform: translate(-50%, -50%) rotate(-236.993deg); height: 642.632px;"><div class="the-visible-line" style="height: 25.0662px; transform: rotate(76.7721deg);"></div></div>' +
+	'<div class="a-line" id="F1914343TNunki" style="transform: translate(-50%, -50%) rotate(-241.414deg); height: 633.041px;"><div class="the-visible-line" style="height: 13.3172px; transform: rotate(92.5923deg);"></div></div>' +
+	'<div class="a-line" id="FNunkiT1969933" style="transform: translate(-50%, -50%) rotate(-243.816deg); height: 634.807px;"><div class="the-visible-line" style="height: 16.7518px; transform: rotate(71.8286deg);"></div></div>' +
+	'<div class="a-line" id="F1914343TAscella" style="transform: translate(-50%, -50%) rotate(-241.414deg); height: 633.041px;"><div class="the-visible-line" style="height: 24.7385px; transform: rotate(66.7945deg);"></div></div>' +
+	'<div class="a-line" id="FAscellaT1969933" style="transform: translate(-50%, -50%) rotate(-245.653deg); height: 615.234px;"><div class="the-visible-line" style="height: 7.67992px; transform: rotate(129.771deg);"></div></div>' +
+	'<div class="a-line" id="FNunkiT1964061" style="transform: translate(-50%, -50%) rotate(-243.816deg); height: 634.807px;"><div class="the-visible-line" style="height: 16.7839px; transform: rotate(126.67deg);"></div></div>' +
+	'<div class="a-line" id="F1964061TAlbaldah" style="transform: translate(-50%, -50%) rotate(-246.171deg); height: 655.405px;"><div class="the-visible-line" style="height: 7.36059px; transform: rotate(98.0084deg);"></div></div>' +
+	'<div class="a-line" id="F1946081T1964061" style="transform: translate(-50%, -50%) rotate(-244.433deg); height: 660.235px;"><div class="the-visible-line" style="height: 10.2655px; transform: rotate(75.5401deg);"></div></div>' +
+	'<div class="a-line" id="FAlbaldahT2008520" style="transform: translate(-50%, -50%) rotate(-247.441deg); height: 657.615px;"><div class="the-visible-line" style="height: 18.2707px; transform: rotate(107.842deg);"></div></div>' +
+	'<div class="a-line" id="F2008520T2008656" style="transform: translate(-50%, -50%) rotate(-250.418deg); height: 669.713px;"><div class="the-visible-line" style="height: 4.71941px; transform: rotate(179.021deg);"></div></div>' +
+	'<div class="a-line" id="F1969933T2048705" style="transform: translate(-50%, -50%) rotate(-246.735deg); height: 625.165px;"><div class="the-visible-line" style="height: 40.723px; transform: rotate(88.7544deg);"></div></div>' +
+	'<div class="a-line" id="F2048705T2107312" style="transform: translate(-50%, -50%) rotate(-254.177deg); height: 628.69px;"><div class="the-visible-line" style="height: 29.0523px; transform: rotate(67.613deg);"></div></div>' +
+	'<div class="a-line" id="F2107312T2123017" style="transform: translate(-50%, -50%) rotate(-259.237deg); height: 607.634px;"><div class="the-visible-line" style="height: 8.06421px; transform: rotate(68.4016deg);"></div></div>' +
+	'<div class="a-line" id="F2115042T2123017" style="transform: translate(-50%, -50%) rotate(-259.934deg); height: 565.626px;"><div class="the-visible-line" style="height: 18.5026px; transform: rotate(168.034deg);"></div></div>' +
+	'<div class="a-line" id="F2102592T2115042" style="transform: translate(-50%, -50%) rotate(-258.815deg); height: 535.017px;"><div class="the-visible-line" style="height: 16.221px; transform: rotate(160.099deg);"></div></div>' +
+	'<div class="a-line" id="FRukbatT2102592" style="transform: translate(-50%, -50%) rotate(-250.972deg); height: 555.083px;"><div class="the-visible-line" style="height: 37.54px; transform: rotate(71.6376deg);"></div></div>' +
+	'<div class="a-line" id="FArkab PriorT2102592" style="transform: translate(-50%, -50%) rotate(-250.66deg); height: 536.315px;"><div class="the-visible-line" style="height: 38.7279px; transform: rotate(85.6923deg);"></div></div>' +
+	'<div class="a-line" id="FAlgediTAlshat" style="transform: translate(-50%, -50%) rotate(-264.514deg); height: 668.765px;"><div class="the-visible-line" style="height: 4.03004px; transform: rotate(70.1973deg);"></div></div>' +
+	'<div class="a-line" id="FAlgediTDabih" style="transform: translate(-50%, -50%) rotate(-264.514deg); height: 668.765px;"><div class="the-visible-line" style="height: 7.78341px; transform: rotate(32.9215deg);"></div></div>' +
+	'<div class="a-line" id="FNashiraTDeneb Algedi" style="transform: translate(-50%, -50%) rotate(-285.023deg); height: 587.767px;"><div class="the-visible-line" style="height: 9.02004px; transform: rotate(79.3182deg);"></div></div>' +
+	'<div class="a-line" id="F2274304TNashira" style="transform: translate(-50%, -50%) rotate(-276.487deg); height: 612.108px;"><div class="the-visible-line" style="height: 46.2674px; transform: rotate(70.5267deg);"></div></div>' +
+	'<div class="a-line" id="FAlshatT2274304" style="transform: translate(-50%, -50%) rotate(-265.166deg); height: 666.084px;"><div class="the-visible-line" style="height: 68.5174px; transform: rotate(61.2632deg);"></div></div>' +
+	'<div class="a-line" id="F2333785TDeneb Algedi" style="transform: translate(-50%, -50%) rotate(-284.27deg); height: 576.221px;"><div class="the-visible-line" style="height: 13.3046px; transform: rotate(107.323deg);"></div></div>' +
+	'<div class="a-line" id="F2314277T2333785" style="transform: translate(-50%, -50%) rotate(-281.667deg); height: 569.952px;"><div class="the-visible-line" style="height: 13.3895px; transform: rotate(102.219deg);"></div></div>' +
+	'<div class="a-line" id="F2276684T2314277" style="transform: translate(-50%, -50%) rotate(-276.782deg); height: 572.341px;"><div class="the-visible-line" style="height: 24.3687px; transform: rotate(84.7522deg);"></div></div>' +
+	'<div class="a-line" id="F2245042T2276684" style="transform: translate(-50%, -50%) rotate(-272.955deg); height: 574.202px;"><div class="the-visible-line" style="height: 19.1623px; transform: rotate(85.3027deg);"></div></div>' +
+	'<div class="a-line" id="F2231926T2245042" style="transform: translate(-50%, -50%) rotate(-271.524deg); height: 586.554px;"><div class="the-visible-line" style="height: 9.52286px; transform: rotate(48.8641deg);"></div></div>' +
+	'<div class="a-line" id="FDabihT2231926" style="transform: translate(-50%, -50%) rotate(-265.253deg); height: 655.756px;"><div class="the-visible-line" style="height: 48.4556px; transform: rotate(41.3859deg);"></div></div>' +
+	'<div class="a-line" id="FAlbaliT2246934" style="transform: translate(-50%, -50%) rotate(-271.919deg); height: 664.305px;"><div class="the-visible-line" style="height: 7.22701px; transform: rotate(85.3114deg);"></div></div>' +
+	'<div class="a-line" id="F2246934TSadalsuud" style="transform: translate(-50%, -50%) rotate(-273.163deg); height: 663.276px;"><div class="the-visible-line" style="height: 56.0554px; transform: rotate(78.4573deg);"></div></div>' +
+	'<div class="a-line" id="FSadalsuudTSadalmelik" style="transform: translate(-50%, -50%) rotate(-282.89deg); height: 650.2px;"><div class="the-visible-line" style="height: 48.4344px; transform: rotate(84.4536deg);"></div></div>' +
+	'<div class="a-line" id="FSadalmelikTAncha" style="transform: translate(-50%, -50%) rotate(-291.446deg); height: 648.044px;"><div class="the-visible-line" style="height: 27.7476px; transform: rotate(31.4874deg);"></div></div>' +
+	'<div class="a-line" id="F2385967TAncha" style="transform: translate(-50%, -50%) rotate(-291.609deg); height: 579.745px;"><div class="the-visible-line" style="height: 17.228px; transform: rotate(127.67deg);"></div></div>' +
+	'<div class="a-line" id="FSadalmelikTSadachbia" style="transform: translate(-50%, -50%) rotate(-291.446deg); height: 648.044px;"><div class="the-visible-line" style="height: 24.0077px; transform: rotate(65.0935deg);"></div></div>' +
+	'<div class="a-line" id="FSadachbiaT2423886" style="transform: translate(-50%, -50%) rotate(-295.414deg); height: 629.336px;"><div class="the-visible-line" style="height: 9.8662px; transform: rotate(91.4626deg);"></div></div>' +
+	'<div class="a-line" id="F2418141T2423886" style="transform: translate(-50%, -50%) rotate(-296.319deg); height: 640.114px;"><div class="the-visible-line" style="height: 7.00963px; transform: rotate(44.1988deg);"></div></div>' +
+	'<div class="a-line" id="F2423886T2434398" style="transform: translate(-50%, -50%) rotate(-297.208deg); height: 630.141px;"><div class="the-visible-line" style="height: 9.40944px; transform: rotate(70.7548deg);"></div></div>' +
+	'<div class="a-line" id="F2434398T2461296" style="transform: translate(-50%, -50%) rotate(-298.839deg); height: 624.19px;"><div class="the-visible-line" style="height: 34.2355px; transform: rotate(38.9858deg);"></div></div>' +
+	'<div class="a-line" id="F2456709T2461296" style="transform: translate(-50%, -50%) rotate(-302.398deg); height: 545.006px;"><div class="the-visible-line" style="height: 14.2773px; transform: rotate(164.664deg);"></div></div>' +
+	'<div class="a-line" id="F2461296T2494515" style="transform: translate(-50%, -50%) rotate(-303.154deg); height: 572.59px;"><div class="the-visible-line" style="height: 31.2756px; transform: rotate(62.3242deg);"></div></div>' +
+	'<div class="a-line" id="F2456709TSkat" style="transform: translate(-50%, -50%) rotate(-302.398deg); height: 545.006px;"><div class="the-visible-line" style="height: 9.67399px; transform: rotate(37.1742deg);"></div></div>' +
+	'<div class="a-line" id="FSkatT2485733" style="transform: translate(-50%, -50%) rotate(-303.663deg); height: 529.718px;"><div class="the-visible-line" style="height: 25.3993px; transform: rotate(38.5813deg);"></div></div>' +
+	'<div class="a-line" id="F2485733T2503767" style="transform: translate(-50%, -50%) rotate(-307.362deg); height: 491.026px;"><div class="the-visible-line" style="height: 14.644px; transform: rotate(78.0125deg);"></div></div>' +
+	'<div class="a-line" id="F2503767T2528990" style="transform: translate(-50%, -50%) rotate(-310.743deg); height: 485.788px;"><div class="the-visible-line" style="height: 22.1707px; transform: rotate(104.496deg);"></div></div>' +
+	'<div class="a-line" id="F2497203T2528990" style="transform: translate(-50%, -50%) rotate(-309.476deg); height: 544.31px;"><div class="the-visible-line" style="height: 36.2503px; transform: rotate(48.0302deg);"></div></div>' +
+	'<div class="a-line" id="F2494515T2497203" style="transform: translate(-50%, -50%) rotate(-308.973deg); height: 546.359px;"><div class="the-visible-line" style="height: 2.60393px; transform: rotate(66.5673deg);"></div></div>' +
+	'<div class="a-line" id="F2492335T2494515" style="transform: translate(-50%, -50%) rotate(-308.581deg); height: 562.785px;"><div class="the-visible-line" style="height: 8.42899px; transform: rotate(12.8191deg);"></div></div>' +
+	'<div class="a-line" id="F93797TAlpherg" style="transform: translate(-50%, -50%) rotate(21.5627deg); height: 662.867px;"><div class="the-visible-line" style="height: 37.359px; transform: rotate(38.8651deg);"></div></div>' +
+	'<div class="a-line" id="F93797T100641" style="transform: translate(-50%, -50%) rotate(21.5627deg); height: 662.867px;"><div class="the-visible-line" style="height: 9.72208px; transform: rotate(120.319deg);"></div></div>' +
+	'<div class="a-line" id="F91300T100641" style="transform: translate(-50%, -50%) rotate(22.0849deg); height: 691.656px;"><div class="the-visible-line" style="height: 14.9322px; transform: rotate(50.1094deg);"></div></div>' +
+	'<div class="a-line" id="FAlphergTTorcular" style="transform: translate(-50%, -50%) rotate(17.1291deg); height: 606.512px;"><div class="the-visible-line" style="height: 26.1313px; transform: rotate(41.2654deg);"></div></div>' +
+	'<div class="a-line" id="FTorcularT153727" style="transform: translate(-50%, -50%) rotate(13.6515deg); height: 568.275px;"><div class="the-visible-line" style="height: 27.1303px; transform: rotate(44.4761deg);"></div></div>' +
+	'<div class="a-line" id="F127385T153727" style="transform: translate(-50%, -50%) rotate(14.6421deg); height: 551.941px;"><div class="the-visible-line" style="height: 25.993px; transform: rotate(62.2295deg);"></div></div>' +
+	'<div class="a-line" id="F80681T127385" style="transform: translate(-50%, -50%) rotate(24.2641deg); height: 586.055px;"><div class="the-visible-line" style="height: 50.6575px; transform: rotate(65.5854deg);"></div></div>' +
+	'<div class="a-line" id="F62727T80681" style="transform: translate(-50%, -50%) rotate(27.8294deg); height: 593.826px;"><div class="the-visible-line" style="height: 18.7585px; transform: rotate(76.2625deg);"></div></div>' +
+	'<div class="a-line" id="F2525456T2551223" style="transform: translate(-50%, -50%) rotate(-314.988deg); height: 601.63px;"><div class="the-visible-line" style="height: 25.5271px; transform: rotate(79.0408deg);"></div></div>' +
+	'<div class="a-line" id="F2525456T2528171" style="transform: translate(-50%, -50%) rotate(-314.988deg); height: 601.63px;"><div class="the-visible-line" style="height: 10.7274px; transform: rotate(14.3361deg);"></div></div>' +
+	'<div class="a-line" id="F2551223T62727" style="transform: translate(-50%, -50%) rotate(-319.828deg); height: 594.044px;"><div class="the-visible-line" style="height: 63.8492px; transform: rotate(83.7339deg);"></div></div>' +
+	'<div class="a-line" id="F2496250T2510181" style="transform: translate(-50%, -50%) rotate(-309.291deg); height: 607.211px;"><div class="the-visible-line" style="height: 14.8303px; transform: rotate(102.595deg);"></div></div>' +
+	'<div class="a-line" id="F2510181T2525456" style="transform: translate(-50%, -50%) rotate(-311.992deg); height: 614.358px;"><div class="the-visible-line" style="height: 17.1175px; transform: rotate(66.6898deg);"></div></div>' +
+	'<div class="a-line" id="F2508805T2528171" style="transform: translate(-50%, -50%) rotate(-311.733deg); height: 589.53px;"><div class="the-visible-line" style="height: 19.7724px; transform: rotate(75.4642deg);"></div></div>' +
+	'<div class="a-line" id="F2496250T2508805" style="transform: translate(-50%, -50%) rotate(-309.291deg); height: 607.211px;"><div class="the-visible-line" style="height: 15.5115px; transform: rotate(54.056deg);"></div></div>' +
+	'<div class="a-line" id="FFumalsamakahT2496250" style="transform: translate(-50%, -50%) rotate(-305.969deg); height: 620.443px;"><div class="the-visible-line" style="height: 18.9832px; transform: rotate(67.9423deg);"></div></div>' +
+	'</div>' +				
+					'<a-star ' +
+						'v-for="(star, i) in $root.theStarsFiltered" ' +
+						':key="star.id" ' +
+						':id="star.id" ' +
+						':star="star" ' +
+						'>' +
+					'</a-star>' +
+					'<div class="shader-container sunrise" ' +
+						//'v-if="false" ' +
+						':style="{ ' +				
+							'transform: \'' +
+								'translate(0%, -50%) ' +
+								'rotate(\' + ($root.sunAngle - (360 * $root.dayPercent())) + \'deg)' +
+							'\', ' +
+							'borderLeft: $root.showAngles ? \'1px solid #666\' : null, ' +
+						'} "' +
+						'>' +
+						'<div class="shader-caption" v-if="$root.showAngles" style="left: 0; top: 0px;"><div style="' +
+							'position: absolute; right: 0px; top: 44.6%;' +
+							'transform: rotate(90deg); transform-origin: top right; ' +
+							'">Midheaven</div></div>' +
+						'<div class="shader-caption" v-if="$root.showAngles" style="left: 0; top: 0px;"><div style="' +
+							'position: absolute; right: 0px; top: 56.4%;' +
+							'transform: rotate(90deg); transform-origin: top right; ' +
+							'">Imum&nbsp;Coeli</div></div>' +
+						'<div class="visible-ecliptic-shader" v-if="$root.showShader" ' +
+							':style="{ ' +				
+								'transform: \'' +
+									'translate(-50%, -50%) ' +
+									'rotate(\' + (-$root.shaderSeasonRotation()) + \'deg)' +
+								'\', ' +
+								'borderBottom: $root.showAngles ? \'1px solid #666\' : null, ' +
+							'} "' +
+							'>' +
+							'<div class="shader-caption" v-if="$root.showAngles">Ascending / Rising</div>' +
+						'</div>' +
+					'</div>' +
+					'<div class="shader-container sunrise" ' +
+						//'v-if="false" ' +
+						':style="{ ' +				
+							'transform: \'' +
+								'translate(0%, -50%) ' +
+								'rotate(\' + ($root.sunAngle - (360 * $root.dayPercent())) + \'deg) ' +
+								'scaleX(-1) ' +
+							'\', ' +
+						'} "' +
+						'>' +
+						'<div class="visible-ecliptic-shader" v-if="$root.showShader" ' +
+							':style="{ ' +				
+								'transform: \'' +
+									'translate(-50%, -50%) ' +
+									'rotate(\' + (-$root.shaderSeasonRotation()) + \'deg)' +
+								'\', ' +
+								'borderBottom: $root.showAngles ? \'1px solid #666\' : null, ' +
+							'} "' +
+							'>' +
+							'<div class="shader-caption" v-if="$root.showAngles"><div style="transform: scaleX(-1)">Descending</div></div>' +
+						'</div>' +
+					'</div>' +
 				'</div>' +
 			'</div>' +
 		'</div>' +
@@ -635,13 +638,14 @@ var app = new Vue({
 	el: '#app',
     data: {
 	    sessionStorage: sessionStorage,
+	    savedDateTimes: {},
 	    MILLIS_IN_YEAR: 31556952000,
-    SECOND: 1000,
-    MINUTE: 60 * 1000,
-    HOUR: 60 * 60 * 1000,
-    DAY: 24 * 60 * 60 * 1000,
-    MONTHISH: 30 * 24 * 60 * 60 * 1000,
-    YEARISH: 365 * 24 * 60 * 60 * 1000,
+	    SECOND: 1000,
+	    MINUTE: 60 * 1000,
+	    HOUR: 60 * 60 * 1000,
+	    DAY: 24 * 60 * 60 * 1000,
+	    MONTHISH: 30 * 24 * 60 * 60 * 1000,
+	    YEARISH: 365 * 24 * 60 * 60 * 1000,
 	    window: window,
 	    dateTime: new Date().getTime(),
 	    savedDateTime: null,
@@ -6072,6 +6076,9 @@ var app = new Vue({
 	    },
     },
     methods: {
+	    saveDateTime: function() {
+		    Vue.set(this.savedDateTimes, this.dateTime, { time: this.dateTime, });
+	    },
 	    angleFromMoonToSun: function() {
 		    var moonEl = document.getElementById('Moon-disc');
 		    var sunEl = document.getElementById('Sun-disc');
@@ -6385,10 +6392,20 @@ var app = new Vue({
 	    var $root = this.$root;
 	    //this.runClock();
 	    setTimeout(function() { 
+		    if (typeof $root.sessionStorage.getItem('savedDateTimes') == 'undefined' || $root.sessionStorage.getItem('savedDateTimes') == null) {
+			    $root.sessionStorage.setItem('savedDateTimes', JSON.stringify({}));
+		    }
+		    Vue.set($root, 'savedDateTimes', JSON.parse($root.sessionStorage.getItem('savedDateTimes')));
+
 		    $root.theCenterEl = document.getElementById('the-center').getBoundingClientRect();
 		    $root.dateTime++;
 		    //Vue.set($root, 'dateTime', $root.dateTime + 6.7*$root.MONTHISH);
 		    //Vue.set($root, 'showLines', true);
 	    }, 100);
+    },
+    watch: {
+	    savedDateTimes: function(newSavedDateTimes) {
+		    this.sessionStorage.setItem('savedDateTimes', JSON.stringify(newSavedDateTimes));
+	    }
     },
 });
